@@ -1,0 +1,1613 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+<title>REST-aurant</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Lexend:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a Sidi Bou Said bistro seen from the front — dining room (wall, slate menu, tables) on the left, the pass counter under it, the steel kitchen with its order terminal on the right. Single deliberate light look. */
+:root{
+  color-scheme:light;
+  --wall:#f5f7f9; --wall-line:#dfe6ec; --blue:#1d5fa6; --blue-deep:#0e3a6d; --blue-soft:#d6e5f5;
+  --lemon:#f2c230; --wood:#b67b4b; --wood-dark:#7a4f2d; --slate:#2f4a40; --chalk:#f1f4ea;
+  --steel:#26333f; --steel-2:#314150; --steel-line:#45586a; --steel-ink:#e8eef3; --steel-muted:#9fb1c1;
+  --ink:#15212c; --muted:#566676; --paper:#fffaf0; --card:#ffffff;
+  --good:#1f8a4c; --good-bg:#e2f4e9; --bad:#c0392b; --bad-bg:#fbe5e2; --warn:#b07400; --warn-bg:#fff2d2;
+  --f-display:"Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  --f-body:"Lexend", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+*{box-sizing:border-box}
+html,body{background:#e6ecf1;color:var(--ink)}
+body{font-family:var(--f-body);font-size:15px;line-height:1.45}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:40;background:var(--blue-deep)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--lemon);outline-offset:2px}
+
+/* HUD */
+.hud{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--blue-deep);color:#fff}
+.hud-in{max-width:1320px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{font-family:var(--f-display);font-weight:800;font-size:1.45rem;line-height:1}
+.brand span{color:var(--lemon)}
+.svc{font-family:var(--f-mono);font-size:.78rem;background:rgba(255,255,255,.12);padding:3px 8px;border-radius:4px}
+.stat{display:flex;gap:6px;align-items:baseline;font-size:.85rem}
+.stat b{font-family:var(--f-display);font-size:1.15rem;color:var(--lemon);font-variant-numeric:tabular-nums}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip-ev{font-family:var(--f-mono);font-size:.72rem;padding:3px 8px;border-radius:4px;background:var(--bad);color:#fff;animation:blink 1.6s infinite}
+@keyframes blink{50%{opacity:.6}}
+.hud-btns{margin-left:auto;display:flex;gap:8px}
+.hbtn{background:var(--lemon);color:var(--ink);border:0;border-radius:6px;padding:7px 12px;font-family:var(--f-display);font-weight:700;font-size:1rem;cursor:pointer}
+.hbtn.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4)}
+
+/* Game grid */
+.game{max-width:1320px;margin:0 auto;display:grid;gap:14px;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);grid-template-areas:"salle cuisine" "passe cuisine";align-items:start;padding-block:14px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+@media (max-width:980px){.game{grid-template-columns:minmax(0,1fr);grid-template-areas:"salle" "passe" "cuisine"}}
+
+/* Dining room */
+.salle{grid-area:salle;border-radius:10px;overflow:hidden;border:3px solid var(--blue-deep);background:var(--wall)}
+.wall{position:relative;padding:12px 14px 10px;background:
+  linear-gradient(var(--wall),var(--wall)) top/100% calc(100% - 14px) no-repeat,
+  repeating-linear-gradient(90deg,var(--blue) 0 14px,var(--wall) 14px 28px) bottom/100% 14px no-repeat;
+  display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:start}
+.ardoise{background:var(--slate);color:var(--chalk);border:6px solid var(--wood-dark);border-radius:6px;padding:8px 12px;font-family:var(--f-display);min-width:190px;box-shadow:0 4px 0 rgba(0,0,0,.15)}
+.ardoise h3{margin:0;font-size:1.05rem;letter-spacing:.04em}
+.ardoise ol{list-style:none;margin:4px 0 0;padding:0;font-size:.92rem;line-height:1.35}
+.ardoise li{display:flex;gap:8px;justify-content:space-between}
+.ardoise .id{display:inline-block;min-width:1.4em;color:var(--lemon);font-weight:800}
+.ardoise .veg{font-size:.7rem;opacity:.75}
+.dialogue{align-self:stretch;background:var(--card);border:2px solid var(--blue-soft);border-radius:8px;padding:10px 12px;display:grid;gap:4px;align-content:start;min-width:0}
+.dialogue .who{font-family:var(--f-display);font-weight:800;color:var(--blue);font-size:1.05rem;line-height:1.1}
+.dialogue p{margin:0}
+.dialogue .help{color:var(--muted);font-size:.85rem}
+@media (max-width:560px){.wall{grid-template-columns:minmax(0,1fr)}.ardoise{min-width:0}}
+
+.floor{padding:16px 10px 18px;background:
+  conic-gradient(from 45deg, #e9f0f7 25%, #d3e1ef 0 50%, #e9f0f7 0 75%, #d3e1ef 0) 0 0/34px 34px}
+.tables{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 8px}
+.tbl{position:relative;display:grid;justify-items:center;min-height:178px;align-content:end}
+.seat{position:relative;display:grid;justify-items:center;height:138px;align-content:end;width:100%}
+.cust{position:relative;background:none;border:0;padding:0;cursor:pointer;display:grid;justify-items:center;transition:transform .15s}
+.cust:hover{transform:translateY(-3px)}
+.cust.arrive{animation:arrive .6s ease-out}
+.cust.leaving{opacity:0;transform:translateY(-10px);transition:opacity 1.2s, transform 1.2s}
+@keyframes arrive{from{transform:translateX(-30px);opacity:0}to{transform:none;opacity:1}}
+.holding .cust:not(.spy){filter:drop-shadow(0 0 6px rgba(242,194,48,.95))}
+.group{display:flex;align-items:flex-end}
+.group svg+svg{margin-left:-16px}
+.bubble{position:absolute;bottom:calc(100% - 6px);left:50%;transform:translateX(-50%);background:var(--card);border:2px solid var(--ink);border-radius:12px;padding:3px 8px;font-size:.78rem;line-height:1.25;white-space:nowrap;max-width:170px;overflow:hidden;text-overflow:ellipsis;z-index:2;font-weight:600;display:flex;gap:2px;align-items:center}
+.bubble::after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--ink)}
+.bubble svg{width:20px;height:20px;flex:none}
+.bubble.call{background:var(--lemon);font-family:var(--f-display);font-size:.95rem}
+.bubble.mad{background:var(--bad-bg);border-color:var(--bad)}
+.bubble.mad::after{border-top-color:var(--bad)}
+.pat{width:64px;height:6px;border-radius:3px;background:rgba(21,33,44,.15);overflow:hidden;margin-top:2px}
+.pat i{display:block;height:100%;background:var(--good);transition:width .25s linear}
+.pat.mid i{background:var(--lemon)} .pat.low i{background:var(--bad)}
+.top{position:relative;width:92%;height:34px;margin-top:-8px;background:linear-gradient(var(--wood),var(--wood-dark));border-radius:50% / 40%;display:flex;justify-content:center;align-items:center;gap:2px;box-shadow:0 6px 0 -2px rgba(0,0,0,.12)}
+.top .num{position:absolute;left:-4px;top:-10px;background:var(--blue);color:#fff;font-family:var(--f-display);font-weight:800;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:.85rem;border:2px solid #fff}
+.top svg{width:22px;height:22px}
+.libre{font-family:var(--f-display);color:var(--muted);opacity:.6;font-size:.9rem;padding-bottom:10px}
+.laptop{width:30px;height:20px}
+
+/* Pass */
+.passe{grid-area:passe;background:linear-gradient(#c9d3dc,#aebbc7);border:3px solid var(--steel);border-radius:10px;padding:10px 12px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center}
+.waiter{display:grid;grid-template-columns:auto auto;gap:8px;align-items:center}
+.hand{min-width:120px;min-height:64px;border:2px dashed var(--steel);border-radius:8px;background:rgba(255,255,255,.55);display:grid;place-items:center;padding:4px 8px;text-align:center;font-size:.75rem;color:var(--muted);cursor:pointer}
+.hand.full{border-style:solid;border-color:var(--lemon);background:var(--card);color:var(--ink)}
+.trash{background:var(--steel);color:#fff;border:0;border-radius:6px;padding:5px 8px;font-size:.75rem;cursor:pointer;margin-top:4px}
+.pass-items{display:flex;gap:8px;flex-wrap:wrap;min-height:64px;align-items:center}
+.pass-items .empty{color:var(--steel);opacity:.7;font-size:.85rem}
+.item{background:var(--card);border:2px solid var(--steel);border-radius:8px;padding:4px 8px;display:grid;justify-items:center;gap:1px;cursor:pointer;animation:arrive .4s ease-out;min-width:84px}
+.item:hover{border-color:var(--lemon);transform:translateY(-2px)}
+.item .icons{display:flex;flex-wrap:wrap;justify-content:center;max-width:112px}
+.item .icons svg{width:24px;height:24px}
+.item .lab{font-family:var(--f-mono);font-size:.68rem;font-weight:600;white-space:nowrap}
+.item.dup{border-color:var(--bad)}
+@media (max-width:560px){.passe{grid-template-columns:minmax(0,1fr)}}
+
+/* Kitchen */
+.cuisine{grid-area:cuisine;background:var(--steel);color:var(--steel-ink);border-radius:10px;padding:12px;display:grid;gap:12px;min-width:0}
+.cuisine h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.2rem;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.cuisine h2 small{font-family:var(--f-mono);font-weight:400;font-size:.7rem;color:var(--steel-muted)}
+.rail{display:flex;gap:8px;overflow-x:auto;padding:12px 4px 8px;background:linear-gradient(var(--steel-line),var(--steel-line)) top/100% 6px no-repeat;min-height:96px}
+.rail .none{color:var(--steel-muted);font-size:.85rem;align-self:center}
+.tk{flex:0 0 170px;background:var(--paper);color:var(--ink);padding:8px 9px 10px;font-size:.78rem;line-height:1.3;border-top:4px solid var(--lemon);box-shadow:0 4px 8px rgba(0,0,0,.3);cursor:pointer}
+.tk .tt{font-family:var(--f-display);font-weight:800;font-size:.95rem;line-height:1.1}
+.tk .k{font-family:var(--f-mono);font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.tk ul{margin:4px 0 0;padding-left:16px}
+.tk .num{font-family:var(--f-mono);font-weight:600;color:var(--blue)}
+.tk.pay{border-top-color:var(--good)} .tk.info{border-top-color:var(--blue)} .tk.dup{border-top-color:var(--bad);background:#fff1ef}
+
+.borne{background:#0f1820;border:2px solid var(--steel-line);border-radius:8px;padding:10px;display:grid;gap:8px}
+.borne .lbl{font-family:var(--f-mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--steel-muted)}
+.req-line{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.req-line select,.req-line input,.borne textarea{background:#16222c;color:var(--steel-ink);border:1px solid var(--steel-line);border-radius:5px;font-family:var(--f-mono);font-size:.85rem;padding:7px 8px}
+#m{font-weight:600;color:var(--lemon)}
+.host{font-family:var(--f-mono);font-size:.85rem;color:var(--steel-muted)}
+#path{flex:1;min-width:120px}
+.borne textarea{width:100%;resize:vertical}
+#hdrs{min-height:36px} #body{min-height:76px}
+.borne textarea:disabled{opacity:.4}
+.send-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.send{background:var(--lemon);color:var(--ink);border:0;border-radius:6px;padding:9px 18px;font-family:var(--f-display);font-weight:800;font-size:1.05rem;cursor:pointer}
+.clear{background:transparent;color:var(--steel-ink);border:1px solid var(--steel-line);border-radius:6px;padding:8px 12px;cursor:pointer;font-size:.85rem}
+.kbd{font-family:var(--f-mono);font-size:.7rem;color:var(--steel-muted)}
+
+.resp{background:#0f1820;border:2px solid var(--steel-line);border-radius:8px;padding:10px;display:grid;gap:6px;min-height:70px;min-width:0}
+.resp pre{margin:0;font-family:var(--f-mono);font-size:.78rem;background:#16222c;border-radius:5px;padding:6px 8px;overflow-x:auto;color:var(--steel-ink)}
+.r-head{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.pill{font-family:var(--f-mono);font-weight:600;font-size:.82rem;padding:3px 8px;border-radius:4px}
+.pill.s2{background:var(--good);color:#fff} .pill.s4{background:var(--lemon);color:var(--ink)} .pill.s5,.pill.sx{background:var(--bad);color:#fff}
+.badge{font-family:var(--f-mono);font-size:.7rem;padding:2px 7px;border-radius:4px;border:1px solid var(--steel-line);color:var(--steel-muted)}
+.badge.hot{border-color:var(--lemon);color:var(--lemon)}
+.r-hint{margin:0;font-size:.85rem;color:var(--steel-ink)}
+.r-hint b{color:var(--lemon)}
+.r-hdr{font-family:var(--f-mono);font-size:.75rem;color:var(--steel-muted)}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--steel-muted);border-top-color:var(--lemon);border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.resend{background:var(--bad);color:#fff;border:0;border-radius:6px;padding:8px 14px;font-family:var(--f-display);font-weight:700;cursor:pointer;justify-self:start}
+
+.duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+@media (max-width:520px){.duo{grid-template-columns:minmax(0,1fr)}}
+.box{background:var(--steel-2);border-radius:8px;padding:8px 10px;display:grid;gap:6px;align-content:start;min-width:0;position:relative}
+.box h3{margin:0;font-family:var(--f-mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--steel-muted);font-weight:600}
+.stove{display:grid;gap:3px;font-size:.78rem}
+.stove .bar{height:7px;background:#1b2731;border-radius:4px;overflow:hidden}
+.stove .bar i{display:block;height:100%;background:linear-gradient(90deg,#f28c28,var(--lemon))}
+.stove.dup .bar i{background:var(--bad)}
+.muted{color:var(--steel-muted);font-size:.8rem}
+.log{font-family:var(--f-mono);font-size:.7rem;display:grid;gap:3px;max-height:150px;overflow-y:auto}
+.log div{overflow-wrap:anywhere}
+.log .leak{color:#ff8a7a;font-weight:600}
+.log .warn{color:var(--lemon)}
+.blind{position:absolute;inset:0;background:rgba(15,24,32,.92);border-radius:8px;display:grid;place-items:center;text-align:center;padding:10px;font-size:.8rem;color:var(--steel-muted)}
+
+/* Recipe book */
+.book{position:fixed;z-index:30;top:0;bottom:0;left:0;width:min(450px,100%);background:var(--paper);color:var(--ink);box-shadow:8px 0 30px rgba(0,0,0,.3);display:grid;grid-template-rows:auto auto 1fr;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);border-right:8px solid var(--wood-dark)}
+.book-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px 8px max(16px,env(safe-area-inset-left,0px));background:var(--wood-dark);color:var(--paper)}
+.book-head h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.35rem}
+.book-head button{background:var(--paper);color:var(--wood-dark);border:0;border-radius:5px;padding:6px 12px;font-weight:600;cursor:pointer}
+.tabs{display:flex;flex-wrap:wrap;gap:5px;padding:10px 16px 10px max(16px,env(safe-area-inset-left,0px));border-bottom:2px dashed #e2d6bd}
+.tabs button{background:#f3e9d3;border:1px solid #e0cfa9;border-radius:14px;padding:3px 10px;font-size:.78rem;cursor:pointer}
+.tabs button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.page{overflow-y:auto;padding:14px 16px 24px max(16px,env(safe-area-inset-left,0px));display:grid;gap:10px;align-content:start;grid-auto-rows:max-content}
+.page h3{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.4rem;color:var(--blue-deep);line-height:1.1}
+.page p{margin:0}
+.page pre{margin:0;font-family:var(--f-mono);font-size:.8rem;background:#fff;border:1px solid #e2d6bd;border-left:4px solid var(--blue);border-radius:4px;padding:8px 10px;overflow-x:auto;white-space:pre}
+.page .cap{font-family:var(--f-mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.page ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.why{background:var(--blue-soft);border-radius:6px;padding:10px 12px;display:grid;gap:6px}
+.why b.t{font-family:var(--f-display);font-size:1.05rem;color:var(--blue-deep)}
+.plus{color:var(--good);font-weight:600} .minus{color:var(--bad);font-weight:600}
+.page table{border-collapse:collapse;width:100%;font-size:.85rem}
+.page td,.page th{border-bottom:1px solid #e2d6bd;padding:5px 6px;text-align:left}
+.page th{font-family:var(--f-mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+
+/* Chef tip */
+.tip{position:fixed;z-index:35;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));width:min(620px,calc(100% - 24px));background:var(--card);border:3px solid var(--blue);border-radius:12px;padding:10px 14px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center;box-shadow:0 12px 30px rgba(0,0,0,.3);animation:arrive .35s ease-out}
+.tip .who{font-family:var(--f-display);font-weight:800;color:var(--blue);line-height:1}
+.tip p{margin:2px 0 8px}
+.tip button{background:var(--blue);color:#fff;border:0;border-radius:6px;padding:6px 16px;font-family:var(--f-display);font-weight:700;cursor:pointer}
+.toasts{position:fixed;z-index:36;top:calc(64px + env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));display:grid;gap:8px;width:min(340px,calc(100% - 24px))}
+.toast{background:var(--card);border-left:6px solid var(--bad);border-radius:6px;padding:8px 12px;font-size:.85rem;box-shadow:0 8px 20px rgba(0,0,0,.25);animation:arrive .3s ease-out}
+.toast.good{border-left-color:var(--good)}
+
+/* Modal */
+.modal{position:fixed;z-index:50;inset:0;background:rgba(14,58,109,.55);display:grid;place-items:center;padding:20px max(16px,env(safe-area-inset-right,0px)) 20px max(16px,env(safe-area-inset-left,0px));overflow-y:auto}
+.sheet{background:var(--wall);border-radius:14px;border:4px solid var(--blue-deep);max-width:820px;width:100%;padding:24px;display:grid;gap:14px;grid-auto-rows:max-content;max-height:calc(100dvh - 40px);overflow-y:auto}
+@media (max-width:560px){.sheet{padding:16px}}
+.sheet h1{margin:0;font-family:var(--f-display);font-weight:800;font-size:clamp(2.2rem,7vw,3.6rem);line-height:.95;color:var(--blue-deep);text-wrap:balance}
+.sheet h1 span{color:var(--blue)}
+.sheet h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.8rem;color:var(--blue-deep);line-height:1.05}
+.sheet .lead{font-size:1.05rem;margin:0;max-width:62ch}
+.sheet p{margin:0}
+.how{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr))}
+.how div{background:var(--card);border:2px solid var(--blue-soft);border-radius:10px;padding:10px 12px;display:grid;gap:4px;align-content:start}
+.how b{font-family:var(--f-display);font-size:1.05rem;color:var(--blue)}
+.how .n{font-family:var(--f-mono);font-size:.7rem;color:var(--muted)}
+.cast{display:flex;gap:4px;flex-wrap:wrap;align-items:flex-end}
+.big{background:var(--lemon);color:var(--ink);border:0;border-radius:8px;padding:12px 22px;font-family:var(--f-display);font-weight:800;font-size:1.25rem;cursor:pointer;justify-self:start}
+.stars{font-size:2.4rem;color:var(--lemon);letter-spacing:.06em;line-height:1;-webkit-text-stroke:1px var(--wood-dark)}
+.stars .off{color:#d5dde4;-webkit-text-stroke:0}
+.kpis{display:flex;gap:10px;flex-wrap:wrap}
+.kpi{background:var(--card);border-radius:8px;padding:8px 14px;border:2px solid var(--blue-soft)}
+.kpi b{display:block;font-family:var(--f-display);font-size:1.5rem;color:var(--blue-deep);line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi span{font-size:.78rem;color:var(--muted)}
+.events{margin:0;padding-left:18px;display:grid;gap:4px}
+.carnet{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr))}
+.carnet .col{display:grid;gap:8px;align-content:start}
+.carnet h3{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.3rem}
+.carnet .av h3{color:var(--good)} .carnet .li h3{color:var(--bad)}
+.lesson{background:var(--card);border-radius:8px;padding:10px 12px;display:grid;gap:4px;border-top:4px solid var(--good)}
+.li .lesson{border-top-color:var(--bad)}
+.lesson b{font-family:var(--f-display);font-size:1.05rem}
+.lesson .you{font-size:.88rem;background:var(--warn-bg);border-radius:5px;padding:5px 8px}
+.lesson .fix{font-size:.85rem;color:var(--muted)}
+.rule{background:var(--blue);color:#fff;border-radius:10px;padding:12px 16px}
+.rule b{color:var(--lemon)}
+/* Tutoriel : leçons */
+.start-btns{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.ghostbtn{background:transparent;border:2px solid var(--blue);color:var(--blue);border-radius:8px;padding:10px 16px;font-family:var(--f-display);font-weight:700;font-size:1.05rem;cursor:pointer}
+.linkbtn{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:.85rem}
+.lesson-nav{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.dots{display:flex;gap:6px;margin-right:auto}
+.dots i{width:10px;height:10px;border-radius:50%;background:var(--blue-soft)}
+.dots i.on{background:var(--blue)}
+.kick{font-family:var(--f-mono);font-size:.75rem;text-transform:uppercase;letter-spacing:.12em;color:var(--blue)}
+.trio{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr))}
+.trio div{background:var(--card);border-radius:10px;padding:12px;display:grid;gap:6px;align-content:start;border:2px solid var(--blue-soft)}
+.trio b{font-family:var(--f-display);font-size:1.1rem;color:var(--blue-deep)}
+.trio .irl{font-size:.82rem;color:var(--muted);border-top:1px dashed var(--blue-soft);padding-top:6px}
+.anat{background:#0f1820;border-radius:10px;padding:14px;display:grid;gap:8px;font-family:var(--f-mono);font-size:.9rem;overflow-x:auto}
+.anat .row{display:flex;gap:6px;align-items:center}
+.tag{padding:4px 8px;border-radius:5px;white-space:nowrap;font-family:var(--f-mono)}
+.tag.m{background:var(--lemon);color:var(--ink);font-weight:600}
+.tag.u,.tag.d{background:#3c78c0;color:#fff}
+.tag.h{background:#5a6b7b;color:#fff}
+.tag.b{background:#2e8b57;color:#fff}
+.tag.s{background:#8e44ad;color:#fff}
+.tag.p{background:#d35400;color:#fff}
+.tag.q{background:#16a085;color:#fff}
+.legend{display:grid;gap:8px}
+.legend div{display:grid;grid-template-columns:minmax(110px,auto) minmax(0,1fr);gap:10px;align-items:baseline}
+.legend .tag{font-size:.78rem;justify-self:start}
+.sheet table{border-collapse:collapse;width:100%;font-size:.92rem;background:var(--card);border-radius:8px;overflow:hidden}
+.sheet th,.sheet td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--blue-soft);vertical-align:top}
+.sheet th{font-family:var(--f-mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.tablewrap{overflow-x:auto}
+.sheet pre{font-family:var(--f-mono);background:#0f1820;color:#e8eef3;border-radius:8px;padding:10px 12px;margin:0;overflow-x:auto;font-size:.9rem}
+.sheet ul.rules{margin:0;padding-left:20px;display:grid;gap:5px}
+.sheet code{font-family:var(--f-mono);font-size:.85em;background:var(--blue-soft);padding:0 4px;border-radius:3px}
+.jsonx{display:grid;gap:6px}
+.jsonx div{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;align-items:baseline;background:var(--card);border-radius:6px;padding:7px 10px}
+.jsonx code{background:none;padding:0;font-size:.88rem;overflow-wrap:anywhere}
+.jsonx span.why{grid-column:2;font-size:.82rem;color:var(--muted)}
+.ko{color:var(--bad);font-weight:800} .okk{color:var(--good);font-weight:800}
+.codes{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+.codes div{background:var(--card);border-radius:8px;padding:8px 12px;border-left:6px solid var(--good);display:grid;gap:2px}
+.codes div.e{border-left-color:var(--lemon)}
+.codes b{font-family:var(--f-mono);font-size:1.05rem}
+.note{background:var(--blue-soft);border-radius:8px;padding:10px 12px}
+/* Aide-mémoire */
+.cheat{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.cheat section{background:var(--card);border-radius:10px;padding:12px 14px;display:grid;gap:6px;align-content:start;border-top:5px solid var(--blue);min-width:0}
+.cheat section.ev{border-top-color:var(--bad)} .cheat section.win{border-top-color:var(--good)}
+.cheat h3{margin:0;font-family:var(--f-display);font-size:1.15rem;color:var(--blue-deep)}
+.cheat ul{margin:0;padding-left:18px;display:grid;gap:4px;font-size:.9rem}
+.cheat table{font-size:.82rem}
+/* Tutoriel : coach */
+.coach-hole{position:fixed;z-index:44;pointer-events:none;border-radius:10px;box-shadow:0 0 0 4px var(--lemon),0 0 0 9999px rgba(8,25,45,.42);transition:top .25s,left .25s,width .25s,height .25s}
+.coach{position:fixed;z-index:46;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));width:min(580px,calc(100% - 24px));background:var(--card);border:3px solid var(--lemon);border-radius:14px;padding:12px 14px;display:grid;gap:8px;box-shadow:0 14px 34px rgba(0,0,0,.35);max-height:48vh;overflow-y:auto;grid-auto-rows:max-content}
+.coach.at-top{bottom:auto;top:calc(64px + env(safe-area-inset-top,0px))}
+.c-top{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.c-step{font-family:var(--f-mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--blue)}
+.c-skip{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:.8rem}
+.c-body{font-size:.98rem}
+.c-body ul{margin:4px 0;padding-left:18px}
+.c-body pre{margin:6px 0;font-family:var(--f-mono);background:#0f1820;color:#e8eef3;border-radius:6px;padding:8px 10px;overflow-x:auto;font-size:.9rem}
+.c-body code{font-family:var(--f-mono);background:var(--blue-soft);padding:0 4px;border-radius:3px}
+.c-body small{color:var(--muted)}
+.c-status{font-size:.88rem;color:var(--warn);min-height:0}
+.c-status .ok{color:var(--good);font-size:1.05rem}
+.c-btns{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;align-items:center}
+.c-wait{font-size:.82rem;color:var(--muted);margin-right:auto}
+.c-next{background:var(--blue);color:#fff;border:0;border-radius:8px;padding:8px 18px;font-family:var(--f-display);font-weight:700;font-size:1rem;cursor:pointer}
+.c-fill{background:transparent;border:2px solid var(--blue-soft);color:var(--blue);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:.85rem}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<header class="hud">
+  <div class="hud-in">
+    <div class="brand">REST<span>-aurant</span></div>
+    <span class="svc" id="svcName">Déjeuner · 12:00</span>
+    <div class="stat">Caisse <b id="money">0</b> DT</div>
+    <div class="stat">Note <b id="rep">–</b></div>
+    <div class="chips" id="chips"></div>
+    <div class="hud-btns">
+      <button class="hbtn" id="bookBtn" type="button">Livre de recettes</button>
+      <button class="hbtn ghost" id="helpBtn" type="button">Aide</button>
+      <button class="hbtn ghost" id="pauseBtn" type="button">Pause</button>
+    </div>
+  </div>
+</header>
+
+<div class="game" id="game">
+  <section class="salle" aria-label="La salle">
+    <div class="wall">
+      <div class="ardoise" aria-label="La carte">
+        <h3>La carte</h3>
+        <ol id="ardoise"></ol>
+      </div>
+      <div class="dialogue" id="dialogue" aria-live="polite">
+        <span class="who">La salle</span>
+        <p>Cliquez sur un client qui lève la main pour prendre sa commande.</p>
+      </div>
+    </div>
+    <div class="floor"><div class="tables" id="tables"></div></div>
+  </section>
+
+  <section class="passe" aria-label="Le passe">
+    <div class="waiter">
+      <div id="waiterAv"></div>
+      <div>
+        <div class="hand" id="hand" role="button" tabindex="0">Mains vides</div>
+        <button class="trash" id="trash" type="button">Jeter</button>
+      </div>
+    </div>
+    <div class="pass-items" id="pass"></div>
+  </section>
+
+  <section class="cuisine" aria-label="La cuisine">
+    <h2>Tickets en attente <small>cliquez sur un ticket pour revoir la demande</small></h2>
+    <div class="rail" id="rail"></div>
+
+    <form class="borne" id="borne" autocomplete="off">
+      <h2 style="color:var(--lemon)">Borne de la cuisine <small>écrivez la requête HTTP</small></h2>
+      <span class="lbl">Méthode et adresse</span>
+      <div class="req-line">
+        <select id="m" aria-label="Méthode"><option>POST</option><option>GET</option><option>PUT</option><option>DELETE</option></select>
+        <select id="scheme" aria-label="Protocole"><option value="http://">http://</option><option value="https://">https://</option></select>
+        <span class="host">rest-aurant.tn</span>
+        <input id="path" placeholder="/chemin" aria-label="Chemin" spellcheck="false">
+      </div>
+      <span class="lbl">En-têtes (facultatif, un par ligne)</span>
+      <textarea id="hdrs" rows="1" placeholder="Vide la plupart du temps" spellcheck="false"></textarea>
+      <span class="lbl">Body (JSON)</span>
+      <textarea id="body" rows="3" placeholder="Écris ici le JSON du body (pour POST)" spellcheck="false"></textarea>
+      <div class="send-row">
+        <button class="send" type="submit">Envoyer</button>
+        <button class="clear" type="button" id="clearBtn">Effacer</button>
+        <span class="kbd">Ctrl + Entrée pour envoyer</span>
+      </div>
+    </form>
+
+    <div class="resp" id="resp" aria-live="polite"><span class="muted">La réponse du serveur s'affichera ici.</span></div>
+
+    <div class="duo">
+      <div class="box"><h3>Aux fourneaux</h3><div id="stoves"></div></div>
+      <div class="box"><h3>Registre du serveur</h3><div class="log" id="log"></div></div>
+    </div>
+  </section>
+</div>
+
+<aside class="book" id="book" hidden aria-label="Livre de recettes">
+  <div class="book-head"><h2>Livre de recettes</h2><button type="button" id="bookClose">Fermer</button></div>
+  <nav class="tabs" id="tabs"></nav>
+  <div class="page" id="page"></div>
+</aside>
+
+<div class="toasts" id="toasts"></div>
+<div class="tip" id="tip" hidden></div>
+<div class="coach-hole" id="coachHole" hidden></div>
+<div class="coach" id="coach" hidden role="dialog" aria-live="polite"></div>
+<div class="modal" id="modal" hidden><div class="sheet" id="sheet"></div></div>
+
+<script>
+/* ---------- Données ---------- */
+const HOST = "rest-aurant.tn";
+const MENU = {
+  1:{nom:"Pizza margherita", court:"pizza", prix:12, veg:true},
+  2:{nom:"Burger maison", court:"burger", prix:14, veg:false},
+  3:{nom:"Salade César", court:"salade", prix:10, veg:false},
+  4:{nom:"Tiramisu", court:"tiramisu", prix:7, veg:true},
+  5:{nom:"Citronnade", court:"citronnade", prix:4, veg:true}
+};
+const LOOKS = {
+  yasmine:{skin:"#c68a62",hair:"long",hc:"#2b1a12",shirt:"#d9534f"},
+  karim:{skin:"#a86f4c",hair:"short",hc:"#1a1410",shirt:"#3f7cac",acc:"beard"},
+  haddad:{skin:"#e3b892",hair:"bun",hc:"#a0a0a0",shirt:"#7a5ea8",acc:"glasses"},
+  sami:{skin:"#8a5a3c",hair:"short",hc:"#120c08",shirt:"#4c9a6a",acc:"cap",capc:"#e07b39"},
+  lina:{skin:"#f0c9a5",hair:"long",hc:"#b5651d",shirt:"#e0a030"},
+  omar:{skin:"#b07a55",hair:"short",hc:"#2a2a2a",shirt:"#5b6770",acc:"beard"},
+  nour:{skin:"#d39b72",hair:"hijab",hc:"#2f7f86",shirt:"#2f7f86"},
+  ines:{skin:"#e8bf98",hair:"bob",hc:"#3a2418",shirt:"#c2457a",acc:"glasses"},
+  adam:{skin:"#9c6644",hair:"curly",hc:"#2a1a10",shirt:"#e07b39"},
+  g1:{skin:"#c48a5e",hair:"short",hc:"#222",shirt:"#3f7cac"},
+  g2:{skin:"#e2b38c",hair:"long",hc:"#5a3420",shirt:"#4c9a6a"},
+  g3:{skin:"#9a6440",hair:"curly",hc:"#1a120c",shirt:"#d9534f"},
+  sofia:{skin:"#e6b48c",hair:"bun",hc:"#4a2c1a",shirt:"#16a085"},
+  malek:{skin:"#8f5b3a",hair:"short",hc:"#141010",shirt:"#8e44ad",acc:"glasses"},
+  spy:{skin:"#c9a283",hair:"hood",hc:"#2b2f36",shirt:"#2b2f36",acc:"shades"},
+  chef:{skin:"#c98f66",hair:"short",hc:"#2b1a12",shirt:"#ffffff",acc:"toque"},
+  waiter:{skin:"#d7a47c",hair:"short",hc:"#3a2418",shirt:"#1d5fa6",acc:"bow"}
+};
+const LUNCH = [
+  {key:"yasmine", name:"Yasmine", table:1, kind:"order", items:[1], pay:"card", card:"4970 1234", say:"Bonjour ! Une pizza margherita, s'il vous plaît. Je paierai par carte."},
+  {key:"karim", name:"Karim", table:3, kind:"order", items:[2,5], pay:"cash", say:"Un burger maison et une citronnade. Je paie en espèces."},
+  {key:"haddad", name:"Mme Haddad", table:2, kind:"info", plat:4, say:"Je ne prends rien pour l'instant. Combien coûte le tiramisu ?"},
+  {key:"sami", name:"Sami", table:4, kind:"order", items:[3,5], pay:"card", card:"5312 8890", say:"Une salade César et une citronnade. Par carte, s'il vous plaît."},
+  {key:"lina", name:"Lina", table:5, kind:"info", plat:4, say:"Juste une question : le tiramisu, c'est combien ?"}
+];
+const DINNER = [
+  {key:"omar", name:"Omar", table:1, kind:"order", items:[1,1], pay:"cash", lag:1, say:"Deux pizzas margherita, j'ai une faim de loup !"},
+  {key:"nour", name:"Nour", table:2, kind:"order", items:[2], pay:"cash", f5:true, say:"Un burger maison. J'ai aussi validé la commande sur votre site."},
+  {key:"spy", name:"Client mystérieux", table:6, kind:"spy"},
+  {key:"ines", name:"Inès", table:3, kind:"order", items:[3,4], pay:"card", card:"4011 5566", say:"Une salade César et un tiramisu. Je paierai par carte."},
+  {key:"groupe", name:"Les Ben Salah", table:4, kind:"order", group:["g1","g2","g3"], items:[1,1,2,2,5,5], pay:"cash", patienceMul:1.7, say:"Pour nous six : deux pizzas, deux burgers et deux citronnades !"},
+  {key:"adam", name:"Adam", table:5, kind:"link", say:"Vous pouvez me donner un lien vers vos plats végétariens ? Je veux l'envoyer à une amie."},
+  {key:"yasmine2", look:"yasmine", name:"Yasmine", table:1, kind:"order", items:[4,5], pay:"card", card:"4970 1234", lag:2, say:"Me revoilà ! Un tiramisu et une citronnade, par carte."}
+];
+const SERVICES = [
+  {name:"Déjeuner", start:12*60, maxActive:2, gap:5, list:LUNCH},
+  {name:"Dîner du vendredi", start:20*60, maxActive:3, gap:4, list:DINNER}
+];
+const STATUS = {200:"OK",201:"Created",204:"No Content",400:"Bad Request",402:"Payment Required",404:"Not Found",405:"Method Not Allowed",409:"Conflict",414:"URI Too Long"};
+
+/* ---------- Dessins ---------- */
+function avatar(L, mood, w){
+  w = w || 70;
+  const s=L.skin, h=L.hc, sh=L.shirt;
+  let back="", front="", acc="";
+  const fringe = `<path d="M19 37 Q18 14 40 14 Q62 14 61 37 Q55 23 40 23 Q27 24 19 37Z" fill="${h}"/>`;
+  switch(L.hair){
+    case "long": back=`<path d="M17 36 Q16 12 40 12 Q64 12 63 36 L64 68 Q40 74 16 68 Z" fill="${h}"/>`; front=fringe; break;
+    case "bob": back=`<path d="M17 36 Q16 12 40 12 Q64 12 63 36 L63 54 Q40 58 17 54 Z" fill="${h}"/>`; front=fringe; break;
+    case "short": front=`<path d="M20 34 Q19 13 40 13 Q61 13 60 34 Q57 22 40 21 Q24 22 20 34Z" fill="${h}"/>`; break;
+    case "bun": front=`<circle cx="40" cy="12" r="8" fill="${h}"/><path d="M20 34 Q19 15 40 15 Q61 15 60 34 Q57 23 40 22 Q24 23 20 34Z" fill="${h}"/>`; break;
+    case "curly": front=[[21,30],[25,21],[33,15],[43,14],[52,18],[58,27]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="7.5" fill="${h}"/>`).join(""); break;
+    case "hijab": back=`<path d="M12 78 Q10 34 40 11 Q70 34 68 78 Z" fill="${h}"/>`; break;
+    case "hood": back=`<path d="M9 86 Q7 30 40 9 Q73 30 71 86 Z" fill="${h}"/>`; break;
+  }
+  const wrapped = L.hair==="hijab"||L.hair==="hood";
+  const face = wrapped ? `<ellipse cx="40" cy="38" rx="15" ry="17" fill="${s}"/>` : `<circle cx="40" cy="36" r="20" fill="${s}"/>`;
+  const ey = wrapped ? 37 : 36;
+  let eyes = `<circle cx="33.5" cy="${ey}" r="2.3" fill="#1b1b1b"/><circle cx="46.5" cy="${ey}" r="2.3" fill="#1b1b1b"/>`;
+  let mouth;
+  if(mood==="happy") mouth=`<path d="M33 ${ey+8} Q40 ${ey+14} 47 ${ey+8}" stroke="#5a2a1a" stroke-width="2.2" fill="none" stroke-linecap="round"/><circle cx="29" cy="${ey+6}" r="3" fill="#e46a6a" opacity=".3"/><circle cx="51" cy="${ey+6}" r="3" fill="#e46a6a" opacity=".3"/>`;
+  else if(mood==="mad") mouth=`<path d="M33 ${ey+12} Q40 ${ey+6} 47 ${ey+12}" stroke="#5a2a1a" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M29 ${ey-6} L37 ${ey-3} M51 ${ey-6} L43 ${ey-3}" stroke="#1b1b1b" stroke-width="2" stroke-linecap="round"/>`;
+  else if(mood==="sly") mouth=`<path d="M34 ${ey+10} Q42 ${ey+12} 47 ${ey+7}" stroke="#5a2a1a" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
+  else mouth=`<path d="M34 ${ey+10} L46 ${ey+10}" stroke="#5a2a1a" stroke-width="2.2" stroke-linecap="round"/>`;
+  switch(L.acc){
+    case "glasses": acc=`<g fill="none" stroke="#222" stroke-width="1.6"><circle cx="33.5" cy="${ey}" r="5"/><circle cx="46.5" cy="${ey}" r="5"/><path d="M38.5 ${ey}h3"/></g>`; break;
+    case "shades": eyes=""; acc=`<rect x="26" y="${ey-4}" width="12" height="7" rx="2" fill="#111"/><rect x="42" y="${ey-4}" width="12" height="7" rx="2" fill="#111"/><path d="M38 ${ey-1}h4" stroke="#111" stroke-width="2"/>`; break;
+    case "beard": acc=`<path d="M22 40 Q24 58 40 58 Q56 58 58 40 Q52 51 40 51 Q28 51 22 40Z" fill="${h}"/>`; break;
+    case "cap": acc=`<path d="M19 30 Q20 11 40 11 Q60 11 61 30 Z" fill="${L.capc}"/><rect x="40" y="26" width="26" height="5" rx="2.5" fill="${L.capc}"/>`; break;
+    case "toque": acc=`<g fill="#fff" stroke="#c9d3dc" stroke-width="1.2"><rect x="26" y="8" width="28" height="10"/><circle cx="29" cy="7" r="7"/><circle cx="40" cy="4" r="8"/><circle cx="51" cy="7" r="7"/></g>`; break;
+    case "bow": acc=`<path d="M33 60 L40 63 L47 60 L47 66 L40 63 L33 66Z" fill="#c0392b"/>`; break;
+  }
+  const body = `<path d="M8 92 Q8 60 40 58 Q72 60 72 92Z" fill="${sh}"/>` + (sh==="#ffffff"?`<path d="M8 92 Q8 60 40 58 Q72 60 72 92Z" fill="none" stroke="#c9d3dc"/>`:"");
+  const neck = wrapped ? "" : `<rect x="35" y="50" width="10" height="11" fill="${s}"/>`;
+  return `<svg viewBox="0 0 80 92" width="${w}" height="${Math.round(w*92/80)}" aria-hidden="true">${body}${back}${neck}${face}${front}${eyes}${mouth}${acc}</svg>`;
+}
+const DISH = {
+  1:`<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" fill="#e7b25a"/><circle cx="20" cy="20" r="13.5" fill="#d2452e"/><circle cx="14" cy="16" r="3.2" fill="#fff6e0"/><circle cx="25" cy="14" r="3" fill="#fff6e0"/><circle cx="23" cy="25" r="3.4" fill="#fff6e0"/><circle cx="13" cy="25" r="2.6" fill="#fff6e0"/><path d="M18 19q2-3 4 0q-2 3-4 0Z" fill="#3b8a3a"/></svg>`,
+  2:`<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M6 18Q6 6 20 6Q34 6 34 18Z" fill="#d9963f"/><circle cx="14" cy="11" r="1" fill="#fff3d0"/><circle cx="21" cy="9" r="1" fill="#fff3d0"/><circle cx="27" cy="12" r="1" fill="#fff3d0"/><path d="M5 19q3.75 3 7.5 0t7.5 0t7.5 0t7.5 0v3H5Z" fill="#5aa33c"/><rect x="6" y="22" width="28" height="6" rx="3" fill="#6b3a22"/><rect x="5" y="27" width="30" height="3" fill="#f2c230"/><path d="M6 30H34Q34 35 20 35Q6 35 6 30Z" fill="#d9963f"/></svg>`,
+  3:`<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="13" cy="17" r="6" fill="#6cb84a"/><circle cx="21" cy="14" r="7" fill="#4f9a36"/><circle cx="28" cy="18" r="6" fill="#7cc35a"/><rect x="16" y="16" width="4" height="4" fill="#e9c46a"/><rect x="24" y="14" width="3.5" height="3.5" fill="#e9c46a"/><path d="M4 20H36Q35 34 20 34Q5 34 4 20Z" fill="#f4f7fa" stroke="#9fb0c0"/></svg>`,
+  4:`<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="7" y="10" width="26" height="22" rx="3" fill="#f3e3c3"/><rect x="7" y="17" width="26" height="4" fill="#8a5a3a"/><rect x="7" y="25" width="26" height="4" fill="#8a5a3a"/><rect x="7" y="10" width="26" height="5" rx="2" fill="#5b3a24"/></svg>`,
+  5:`<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M11 9H29L26 35H14Z" fill="#fbe58a" stroke="#c9a92a" stroke-width="1.2"/><rect x="21" y="2" width="2" height="17" fill="#e8574a" transform="rotate(14 22 10)"/><circle cx="28" cy="10" r="6" fill="#f2c230" stroke="#d6a600"/><path d="M28 4V16M22 10H34" stroke="#fff6c8"/></svg>`
+};
+const ICON = {
+  note:`<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="9" y="5" width="22" height="30" rx="2" fill="#fff" stroke="#1d5fa6" stroke-width="2"/><path d="M14 13H26M14 19H26M14 25H22" stroke="#1d5fa6" stroke-width="2"/></svg>`,
+  link:`<svg viewBox="0 0 40 40" aria-hidden="true"><g fill="none" stroke="#1d5fa6" stroke-width="3.2" stroke-linecap="round"><path d="M17 23l6-6"/><path d="M14 19l-3 3a5 5 0 0 0 7 7l3-3"/><path d="M26 21l3-3a5 5 0 0 0-7-7l-3 3"/></g></svg>`,
+  receipt:`<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M10 4H30V36L27 33L24 36L21 33L18 36L15 33L12 36L10 34Z" fill="#fff" stroke="#1f8a4c" stroke-width="2"/><path d="M14 12H26M14 18H26M14 24H22" stroke="#1f8a4c" stroke-width="2"/></svg>`,
+  card:`<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="4" y="10" width="32" height="21" rx="3" fill="#1d5fa6"/><rect x="4" y="15" width="32" height="4" fill="#0e3a6d"/><rect x="8" y="23" width="10" height="3" fill="#f2c230"/></svg>`,
+  laptop:`<svg class="laptop" viewBox="0 0 40 26" aria-hidden="true"><rect x="6" y="2" width="28" height="18" rx="2" fill="#2b2f36"/><rect x="9" y="5" width="22" height="12" fill="#5fd38d" opacity=".7"/><rect x="2" y="20" width="36" height="4" rx="2" fill="#4a5058"/></svg>`
+};
+
+/* ---------- Livre de recettes ---------- */
+const BOOK = [
+  {id:"carte", label:"La carte", html:()=>`
+    <h3>La carte du jour</h3>
+    <p>Dans une requête, un plat se désigne par son <b>numéro</b>, pas par son nom.</p>
+    <table><tr><th>N°</th><th>Plat</th><th>Prix</th><th>Végétarien</th></tr>
+    ${Object.entries(MENU).map(([id,p])=>`<tr><td><b>${id}</b></td><td>${p.nom}</td><td>${p.prix} DT</td><td>${p.veg?"oui":"non"}</td></tr>`).join("")}</table>
+    <p class="cap">Adresse du serveur</p><pre>https://rest-aurant.tn</pre>`},
+  {id:"commande", label:"Prendre une commande", html:()=>`
+    <h3>Prendre une commande</h3>
+    <p class="cap">Requête</p>
+    <pre>POST https://rest-aurant.tn/commandes
+
+{ "table": 2, "plats": [1, 5] }</pre>
+    <p class="cap">Réponse attendue</p>
+    <pre>201 Created
+Location: /commandes/101
+{ "id": 101, "table": 2, "plats": [1, 5], "total": 16 }</pre>
+    <ul><li>Un plat commandé deux fois s'écrit deux fois : <code>[1, 1]</code>.</li>
+    <li>Gardez le numéro de commande (<code>101</code>) : il servira pour encaisser.</li>
+    <li>Quand l'assiette arrive sur le passe, prenez-la et servez la bonne table.</li></ul>
+    <div class="why"><b class="t">Pourquoi POST ?</b>
+      <p><span class="plus">+</span> Une commande est une <b>création</b> : POST est fait pour ça, et le serveur répond 201 Created avec le numéro de la nouvelle ressource.</p>
+      <p><span class="plus">+</span> Les données voyagent dans le <b>body</b>, en JSON : une liste de plats aussi longue que nécessaire. En GET, tout irait dans l'URL, qui a une taille limitée (erreur 414).</p></div>`},
+  {id:"paiement", label:"Encaisser par carte", html:()=>`
+    <h3>Encaisser par carte</h3>
+    <p class="cap">Requête</p>
+    <pre>POST https://rest-aurant.tn/paiements
+
+{ "commande": 101, "carte": "4970 1234" }</pre>
+    <p class="cap">Réponse attendue</p>
+    <pre>201 Created
+{ "id": 501, "commande": 101, "montant": 16, "statut": "accepté" }</pre>
+    <ul><li>Le numéro de commande est sur le ticket de paiement.</li><li>Apportez ensuite le reçu au client.</li></ul>
+    <div class="why"><b class="t">Pourquoi POST ?</b>
+      <p><span class="plus">+</span> Le numéro de carte reste dans le body : il n'apparaît ni dans l'URL, ni dans l'historique du navigateur, ni dans le registre du serveur.</p>
+      <p><span class="minus">−</span> Mais le body n'est <b>pas chiffré</b>. Sans <b>https://</b>, quelqu'un sur le même Wi-Fi peut le lire.</p>
+      <p><span class="minus">−</span> Envoyer deux fois le même paiement débite deux fois le client.</p></div>`},
+  {id:"prix", label:"Donner un prix", html:()=>`
+    <h3>Répondre à une question de prix</h3>
+    <p class="cap">Requête</p>
+    <pre>GET https://rest-aurant.tn/plats/4</pre>
+    <p class="cap">Réponse attendue</p>
+    <pre>200 OK
+{ "id": 4, "nom": "Tiramisu", "prix": 7 }</pre>
+    <p>Pas de body : on ne crée rien, on <b>lit</b>. Apportez la fiche au client.</p>
+    <div class="why"><b class="t">Pourquoi pas POST ?</b>
+      <p><span class="minus">−</span> Une réponse à un POST n'est <b>jamais mise en cache</b> : le serveur referait le travail à chaque fois.</p>
+      <p><span class="plus">+</span> Une réponse à un GET peut être gardée en cache : la deuxième fois, elle revient instantanément.</p></div>`},
+  {id:"lien", label:"Envoyer un lien", html:()=>`
+    <h3>Donner un lien à partager</h3>
+    <p class="cap">Requête</p>
+    <pre>GET https://rest-aurant.tn/plats?vegetarien=true</pre>
+    <p class="cap">Réponse attendue</p>
+    <pre>200 OK
+{ "lien": "https://rest-aurant.tn/plats?vegetarien=true",
+  "plats": [ ... ] }</pre>
+    <div class="why"><b class="t">Pourquoi pas POST ?</b>
+      <p><span class="minus">−</span> Avec POST, la recherche serait dans le body. Le lien ne contiendrait que <code>/plats</code> : impossible de le <b>partager</b>, de le mettre en <b>favori</b> ou de le retrouver dans l'historique.</p>
+      <p><span class="plus">+</span> Avec GET, la recherche est écrite dans l'URL : le lien contient tout.</p></div>`},
+  {id:"annuler", label:"Annuler une commande", html:()=>`
+    <h3>Annuler une commande</h3>
+    <p class="cap">Requête</p>
+    <pre>DELETE https://rest-aurant.tn/commandes/101</pre>
+    <p class="cap">Réponse attendue</p>
+    <pre>204 No Content</pre>
+    <p>La cuisine arrête de préparer la commande, ou retire l'assiette du passe.</p>
+    <div class="why"><b class="t">Quand s'en servir ?</b>
+      <p><span class="minus">−</span> Quand un POST est parti <b>en double</b>. Par exemple, un client qui actualise (F5) sa page de confirmation fait renvoyer le POST par son navigateur.</p>
+      <p><b>Correction côté site :</b> après un POST, rediriger vers une page GET (<code>303 See Other</code> vers <code>/commandes/101</code>). C'est le motif Post/Redirect/Get : actualiser ne fait plus que relire.</p></div>`},
+  {id:"sure", label:"Commande sûre", html:()=>`
+    <h3>Commande sûre : la clé d'idempotence</h3>
+    <p>Écrivez cet en-tête dans le champ <b>En-têtes</b> de la borne :</p>
+    <pre>POST https://rest-aurant.tn/commandes
+Idempotency-Key: yasmine-tiramisu
+
+{ "table": 1, "plats": [4, 5] }</pre>
+    <p>La clé est un texte unique que vous inventez pour cette commande.</p>
+    <div class="why"><b class="t">Pourquoi ?</b>
+      <p><span class="minus">−</span> POST <b>n'est pas idempotent</b> : envoyer deux fois la même requête crée deux commandes. Ça arrive avec un double-clic ou quand le réseau perd la réponse et qu'on renvoie.</p>
+      <p><span class="plus">+</span> Avec la même clé, le serveur reconnaît la requête déjà traitée et renvoie la même réponse, sans rien créer de plus. On peut renvoyer sans risque.</p></div>`},
+  {id:"secu", label:"Sécurité", html:()=>`
+    <h3>http:// ou https:// ?</h3>
+    <ul><li><b>http://</b> : la requête circule en clair. Tout le monde sur le même Wi-Fi peut la lire, body compris.</li>
+    <li><b>https://</b> : la requête est chiffrée. Personne ne peut lire son contenu en route.</li></ul>
+    <div class="why"><b class="t">Le piège</b><p><span class="minus">−</span> Beaucoup pensent que POST « cache » les données. Il les cache de l'URL, <b>pas du réseau</b>. Pour un paiement : POST <b>et</b> https://.</p></div>`},
+  {id:"codes", label:"Codes de retour", html:()=>`
+    <h3>Les codes de retour</h3>
+    <table>
+      <tr><td><b>200</b> OK</td><td>Tout va bien, voici la réponse.</td></tr>
+      <tr><td><b>201</b> Created</td><td>Une nouvelle ressource a été créée.</td></tr>
+      <tr><td><b>204</b> No Content</td><td>C'est fait, rien à renvoyer.</td></tr>
+      <tr><td><b>400</b> Bad Request</td><td>La requête est mal écrite (JSON, champ manquant).</td></tr>
+      <tr><td><b>402</b> Payment Required</td><td>Paiement refusé.</td></tr>
+      <tr><td><b>404</b> Not Found</td><td>Cette adresse ou ce numéro n'existe pas.</td></tr>
+      <tr><td><b>405</b> Method Not Allowed</td><td>Bonne adresse, mauvaise méthode.</td></tr>
+      <tr><td><b>409</b> Conflict</td><td>Impossible dans l'état actuel.</td></tr>
+      <tr><td><b>414</b> URI Too Long</td><td>L'URL est trop longue.</td></tr>
+    </table>`}
+];
+
+/* ---------- État ---------- */
+let G = null;
+let UID = 1; const uid = () => UID++;
+let tipQueue = [], tipOpen = false, modalOpen = false;
+const $ = s => document.querySelector(s);
+const esc = t => String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const sameItems = (a,b) => a.length===b.length && [...a].sort().join(",")===[...b].sort().join(",");
+const totalOf = items => items.reduce((s,id)=>s+MENU[id].prix,0);
+function itemsText(items){ const c={}; items.forEach(i=>c[i]=(c[i]||0)+1); return Object.entries(c).map(([id,n])=>`${n} × ${MENU[id].nom}`); }
+function dishIcons(items){ return items.map(i=>DISH[i]).join(""); }
+
+function freshGame(){
+  return {svc:null, t:0, customers:[], orders:[], pass:[], hand:null, tickets:[], timers:[], queue:[], ratings:[], blindUntil:0, lagShots:0,
+    money:0, nextOrder:101, nextPay:501, cache:new Map(), idem:new Map(), tipsShown:new Set(), log:[],
+    stats:{orderPosts:0, posts:0, firstOrder:null, lastOrder:null, maxItems:0, cacheHits:0, leak:0, spyStolen:0, spySafe:0, lagOutcomes:[], f5:null, dupWasted:0, dupDeleted:0, doubleCharge:0, linkOk:false, banquet:0, paidCard:0},
+    allRatings:[]};
+}
+
+const TRAIN = {name:"Entraînement", start:11*60, maxActive:1, gap:99, list:[]};
+function startService(i){
+  const svc = i==="train" ? TRAIN : SERVICES[i];
+  $("#m").value="POST"; $("#scheme").value="http://"; $("#path").value=""; $("#hdrs").value=""; $("#body").value=""; $("#body").disabled=false;
+  Object.assign(G, {svcIdx:i, svc, t:0, queue:svc.list.map(c=>({...c})), customers:[], orders:[], pass:[], hand:null, tickets:[],
+    timers:[], lag:null, lagShots:0, blindUntil:0, spy:false, nextSpawn:1.5, ratings:[], svcMoney:0, svcIncidents:[], svcPenalty:0, ended:false, endAt:null, paused:false, lagReq:null});
+  $("#resp").innerHTML = `<span class="muted">La réponse du serveur s'affichera ici.</span>`;
+  renderAll();
+  if(i===0) tip("welcome", "Bienvenue au REST-aurant ! Ici, la cuisine ne comprend que les <b>requêtes HTTP</b>. Quand un client lève la main, <b>cliquez sur lui</b> pour prendre sa commande.");
+  else if(i===1) tip("dinner", "C'est le dîner du vendredi : salle pleine et Wi-Fi capricieux. Gardez le <b>livre de recettes</b> ouvert, plusieurs imprévus vous attendent.");
+}
+
+function schedule(delay, fn){ G.timers.push({at:G.t+delay, fn}); }
+function blocked(){ return !G || !G.svc || G.ended || G.paused || tipOpen || modalOpen; }
+
+/* ---------- Boucle ---------- */
+setInterval(()=>{
+  if(blocked()) return;
+  const dt = 0.25; G.t += dt;
+  const due = G.timers.filter(x=>x.at<=G.t); G.timers = G.timers.filter(x=>x.at>G.t); due.forEach(x=>x.fn());
+  spawnCheck();
+  [...G.customers].forEach(c=>updateCustomer(c, dt));
+  G.orders.forEach(o=>{
+    if(o.status==="cooking"){ o.prog += dt/o.dur;
+      if(o.prog>=1){ o.status="ready"; o.prog=1; G.pass.push({uid:uid(), type:"plate", orderId:o.id, table:o.table, items:o.items, dup:o.dup}); renderPass(); } }
+  });
+  endCheck();
+  renderTick();
+}, 250);
+
+function spawnCheck(){
+  if(!G.queue.length || G.t < G.nextSpawn) return;
+  const c = G.queue[0];
+  const active = G.customers.filter(x=>x.kind!=="spy").length;
+  const free = !G.customers.some(x=>x.table===c.table);
+  if(free && (c.kind==="spy" || active < G.svc.maxActive)){
+    G.queue.shift();
+    Object.assign(c, {uid:uid(), state:c.kind==="spy"?"spy":"seated", patience:100, mistakes:0, arrived:G.t, lookObj:LOOKS[c.look||c.key]});
+    G.customers.push(c);
+    G.nextSpawn = G.t + G.svc.gap;
+    if(c.kind==="spy"){ G.spy=true; tip("spy", "Un client mystérieux s'installe à la table 6 avec son ordinateur. Il <b>écoute le Wi-Fi</b> : tout ce qui passe en <b>http://</b> est lisible pour lui."); }
+    renderTables(); renderHUD();
+  }
+}
+
+const RATE = {seated:100/55, waitFood:100/190, waitPay:100/110, waitInfo:100/130};
+function updateCustomer(c, dt){
+  if(c.state==="leaving"){ if(G.t>=c.leaveAt){ G.customers.splice(G.customers.indexOf(c),1); renderTables(); } return; }
+  if(c.kind==="spy") return;
+  if(c.state==="eating"){ c.eatLeft -= dt; if(c.eatLeft<=0) afterEat(c); return; }
+  const r = RATE[c.state];
+  if(r && !c.tutorial){ c.patience -= dt*r/(c.patienceMul||1); if(c.patience<=0){ c.patience=0; angryLeave(c); } }
+}
+function moodOf(c){
+  if(c.kind==="spy") return G.spyMood||"sly";
+  if(c.state==="leaving") return c.angry?"mad":"happy";
+  if(c.state==="eating") return "happy";
+  if(c.flashMood && G.t<c.flashUntil) return c.flashMood;
+  return c.patience>55?"happy":c.patience>25?"neutral":"mad";
+}
+function bubble(c, txt, secs, mood){ c.bubbleTxt=txt; c.bubbleUntil=G.t+(secs||3.5); if(mood){c.flashMood=mood;c.flashUntil=G.t+(secs||3.5);} renderTables(); }
+
+function takeOrder(c){
+  showSay(c);
+  if(c.kind==="order"){
+    c.state="waitFood";
+    G.tickets.push({uid:uid(), kind:"order", cust:c.uid, table:c.table, title:`Table ${c.table} · ${c.name}`, lines:itemsText(c.items), orderId:null});
+    tip("firstTicket", "La commande est sur le <b>rail des tickets</b>. Ouvrez le <b>Livre de recettes</b>, page « Prendre une commande », écrivez la requête dans la <b>borne</b> et envoyez-la. Les numéros des plats sont sur l'ardoise.");
+    if(c.group) tip("banquet", "Six plats d'un coup ! Pas de souci : le body d'un POST transporte une liste aussi longue que nécessaire.");
+  } else if(c.kind==="info"){
+    c.state="waitInfo";
+    G.tickets.push({uid:uid(), kind:"info", cust:c.uid, table:c.table, title:`Table ${c.table} · ${c.name}`, lines:[`Question : prix du ${MENU[c.plat].nom.toLowerCase()}`]});
+    tip("firstInfo", "Une simple question ? Ici on ne crée rien, on <b>lit</b> une information : page « Donner un prix ».");
+  } else if(c.kind==="link"){
+    c.state="waitInfo";
+    G.tickets.push({uid:uid(), kind:"info", cust:c.uid, table:c.table, title:`Table ${c.table} · ${c.name}`, lines:["Veut un lien à partager vers les plats végétariens"]});
+    tip("link", "Adam veut un lien à envoyer à son amie. Page « Envoyer un lien ».");
+  }
+  c.patience = 100;
+  if(c.lag){ G.lagShots=1; G.lagFor=c;
+    if(c.lag===1) tip("lag1", "Attention : le <b>Wi-Fi est saturé</b>. La réponse à votre prochaine commande risque de se perdre en route…");
+    else tip("lag2", "Le Wi-Fi sature encore ! Cette fois, ajoutez une <b>Idempotency-Key</b> à la commande (page « Commande sûre ») : vous pourrez renvoyer sans risque.");
+  }
+  renderAll();
+}
+
+function afterEat(c){
+  if(c.pay==="card"){
+    c.state="waitPay"; c.patience=100;
+    G.tickets.push({uid:uid(), kind:"pay", cust:c.uid, table:c.table, title:`Paiement · table ${c.table}`, lines:[`Commande n°${c.orderId} · ${c.total} DT`, `Carte : ${c.card}`]});
+    tip("firstPay", `${c.name} demande l'addition et paie par carte. Page « Encaisser par carte » : le numéro de commande et la carte sont sur le ticket.`);
+    renderAll();
+  } else {
+    addMoney(c.total);
+    leave(c, true);
+  }
+}
+function addMoney(x){ G.money+=x; G.svcMoney+=x; renderHUD(); }
+function leave(c, ok){
+  let r = ok ? (c.patience>=55?5:c.patience>=30?4:c.patience>=12?3:2) : 1;
+  r = Math.max(1, r - Math.min(2, c.mistakes||0));
+  if(ok){ const t = r>=5?3:r>=4?2:r>=3?1:0; if(t) addMoney(t); }
+  G.ratings.push(r); G.allRatings.push(r);
+  c.state="leaving"; c.leaveAt=G.t+1.6; c.angry=!ok;
+  G.tickets = G.tickets.filter(t=>t.cust!==c.uid);
+  renderAll();
+}
+function angryLeave(c){
+  if(G.lag && G.lag.cust===c && !G.lag.outcome) lagResolve("lost");
+  incident(`${c.name} a quitté le restaurant après une trop longue attente.`, 0);
+  bubble(c, "J'en ai assez, je m'en vais !", 2, "mad");
+  leave(c, false);
+}
+function incident(text, pen){ G.svcIncidents.push(text); G.svcPenalty += pen||0; toast(text, "bad"); }
+
+/* ---------- Service ---------- */
+function serve(c){
+  const it = G.hand; if(!it) return;
+  if(c.state==="leaving") return;
+  if(c.kind==="spy"){ bubble(c, "Je n'ai rien commandé…", 2.5); return; }
+  if(it.type==="plate"){
+    const o = G.orders.find(x=>x.id===it.orderId);
+    if(c.kind==="order" && c.state==="waitFood" && it.table===c.table && sameItems(it.items, c.items)){
+      G.hand=null; o.status="served"; c.orderId=o.id; c.total=o.total; c.state="eating"; c.eatLeft=6;
+      G.tickets.forEach(t=>{ if(t.cust===c.uid && t.kind==="order") t.done=true; });
+      G.tickets = G.tickets.filter(t=>!(t.cust===c.uid && t.kind==="order"));
+      if(G.lag && G.lag.cust===c && !G.lag.outcome) lagResolve("waited");
+      if(c.group) G.stats.banquet = o.items.length;
+      if(c.f5 && !c.f5done){ c.f5done=true; schedule(3, ()=>autoDup(c)); }
+      bubble(c, "Miam, merci !", 2.5, "happy");
+      renderAll(); return;
+    }
+    if(it.table===c.table && c.orderId){
+      G.hand=null; waste(o, `${c.name} a déjà été servi·e : l'assiette n°${o.id} part à la poubelle.`);
+      bubble(c, "J'ai déjà mon plat !", 3, "mad"); renderAll(); return;
+    }
+    c.mistakes++; c.patience = Math.max(0, c.patience-8);
+    bubble(c, it.table!==c.table ? `Je suis à la table ${c.table} !` : "Ce n'est pas ma commande !", 3, "mad"); renderHand(); return;
+  }
+  if(it.type==="note"){
+    if(c.kind==="info" && c.state==="waitInfo" && it.platId===c.plat){ G.hand=null; bubble(c, `${it.price} DT, parfait, merci !`, 2, "happy"); leave(c, true); return; }
+    c.mistakes++; bubble(c, "Ce n'est pas ma question.", 3, "mad"); return;
+  }
+  if(it.type==="link"){
+    if(c.kind==="link" && c.state==="waitInfo"){
+      if(/vegetarien=(true|1|oui)/i.test(it.query)){ G.hand=null; G.stats.linkOk=true; bubble(c, "Super, je l'envoie tout de suite !", 2, "happy"); leave(c, true); }
+      else { c.mistakes++; bubble(c, "Ce lien ne montre pas les plats végétariens.", 3, "mad"); }
+      return;
+    }
+    bubble(c, "Je n'ai pas demandé de lien.", 3); return;
+  }
+  if(it.type==="receipt"){
+    if(c.state==="waitPay" && it.commande===c.orderId){ G.hand=null; bubble(c, "Merci, à bientôt !", 2, "happy"); leave(c, true); return; }
+    bubble(c, "Ce reçu n'est pas le mien.", 3); return;
+  }
+}
+function waste(o, msg){
+  if(!o || o.status==="wasted") return;
+  const cost = Math.round(o.total/2);
+  o.status="wasted"; G.money-=cost; G.svcMoney-=cost;
+  if(o.dup) G.stats.dupWasted++;
+  if(o.auto && G.stats.f5) G.stats.f5.outcome="wasted";
+  G.tickets = G.tickets.filter(t=>t.orderId!==o.id || t.kind!=="dup");
+  incident(`${msg} (−${cost} DT d'ingrédients)`, 0.5);
+  renderHUD();
+}
+
+function autoDup(c){
+  if(G.ended) return;
+  const o = createOrder(c.table, c.items, {auto:true, dur:32});
+  pushLog("POST", "/commandes", 201, "http://", "renvoyé par le navigateur");
+  G.tickets.push({uid:uid(), kind:"dup", cust:null, orderId:o.id, title:`Doublon · table ${c.table}`, lines:[`Commande n°${o.id} reçue une 2e fois`, `${c.name} a actualisé sa page de confirmation`]});
+  G.stats.f5 = {id:o.id, outcome:null};
+  bubble(c, "Oups, j'ai appuyé sur F5…", 5, "neutral");
+  tip("f5", `${c.name} a <b>actualisé</b> sa page de confirmation : son navigateur a <b>renvoyé le POST</b>, et la commande n°${o.id} est partie en double ! Annulez-la avant qu'elle soit cuisinée : page « Annuler une commande ».`);
+  renderAll();
+}
+
+function lagResolve(outcome){
+  if(!G.lag || G.lag.outcome) return;
+  G.lag.outcome = outcome;
+  G.stats.lagOutcomes.push({who:G.lag.who, outcome, round:G.lag.round});
+  const k = "lagAfter-"+G.lag.round+"-"+outcome;
+  if(outcome==="dup") tip(k, "La cuisine avait <b>bien reçu</b> la première requête : seule la réponse s'était perdue. En renvoyant, vous avez créé une <b>deuxième commande</b>. POST n'est pas idempotent ! Annulez le doublon (DELETE), et voyez la page « Commande sûre ».");
+  else if(outcome==="key") tip(k, "Bien joué : grâce à l'<b>Idempotency-Key</b>, le serveur a reconnu la requête déjà traitée. Aucune commande en double.");
+  else if(outcome==="waited" && G.lag.round===1) tip(k, "Vous avez attendu au lieu de renvoyer : la cuisine avait bien reçu la commande. Mais une appli qui renvoie toute seule aurait créé un doublon : voyez la page « Commande sûre ».");
+}
+
+function endCheck(){
+  if(G.training || G.queue.length) return;
+  if(G.customers.some(c=>c.kind!=="spy")) { G.endAt=null; return; }
+  if(G.endAt===null) G.endAt = G.t + 1.5;
+  if(G.t >= G.endAt) endService();
+}
+function endService(){
+  G.ended = true;
+  G.orders.forEach(o=>{ if(o.dup && (o.status==="cooking"||o.status==="ready")) waste(o, `La commande en double n°${o.id} a été préparée pour rien.`); });
+  G.pass.forEach(it=>{ if(it.type==="plate"){ const o=G.orders.find(x=>x.id===it.orderId); if(o && o.status==="ready") waste(o, `L'assiette n°${o.id} est restée sur le passe.`); } });
+  G.hand = null;
+  if(G.stats.f5 && !G.stats.f5.outcome) G.stats.f5.outcome="wasted";
+  renderAll();
+  showBilan();
+}
+
+/* ---------- Serveur HTTP simulé ---------- */
+function parsePath(raw){
+  let p = raw.trim(), scheme=null;
+  const m = p.match(/^(https?):\/\//i); if(m){ scheme=m[1].toLowerCase()+"://"; p=p.slice(m[0].length); }
+  if(p.toLowerCase().startsWith(HOST)) p = p.slice(HOST.length);
+  if(!p.startsWith("/")) p = "/"+p;
+  const qi = p.indexOf("?");
+  const pathPart = qi>=0 ? p.slice(0,qi) : p;
+  const query = qi>=0 ? p.slice(qi+1) : "";
+  const path = (pathPart.replace(/\/+$/,"") || "/").toLowerCase();
+  return {scheme, path, query, q:new URLSearchParams(query), full:path+(query?"?"+query:"")};
+}
+function parseHeaders(txt){ const h={}; txt.split("\n").forEach(l=>{ const i=l.indexOf(":"); if(i>0) h[l.slice(0,i).trim().toLowerCase()]=l.slice(i+1).trim(); }); return h; }
+const err = (status, hint, extra) => Object.assign({status, hint}, extra||{});
+const num = v => (typeof v==="number") ? v : (typeof v==="string" && v.trim()!=="" && !isNaN(+v)) ? +v : NaN;
+
+function createOrder(table, items, opts){
+  opts = opts||{};
+  const id = G.nextOrder++;
+  const live = G.orders.find(x=>x.table===table && ["cooking","ready"].includes(x.status) && sameItems(x.items,items));
+  const eater = G.customers.find(c=>c.table===table && c.orderId && c.items && sameItems(c.items,items));
+  const o = {id, table, items:[...items], total:totalOf(items), status:"cooking", prog:0, dur:opts.dur || (5 + items.length*1.4), dup:!!(opts.auto || live || eater), auto:!!opts.auto};
+  G.orders.push(o);
+  if(!o.dup){
+    const c = G.customers.find(x=>x.table===table && x.kind==="order" && x.state==="waitFood" && sameItems(x.items, items));
+    if(c){ const t = G.tickets.find(t=>t.cust===c.uid && t.kind==="order"); if(t) t.orderId=id; }
+  } else if(G.lag && !G.lag.outcome && G.lag.table===table && sameItems(G.lag.items, items) && !opts.auto){ lagResolve("dup"); }
+  if(!opts.auto){ G.stats.orderPosts++; G.stats.maxItems=Math.max(G.stats.maxItems, items.length); if(!G.stats.firstOrder) G.stats.firstOrder=id; G.stats.lastOrder=id; }
+  renderRail(); renderStoves();
+  return o;
+}
+
+const isLeak = P => /carte|\d{4}\s?\d{4}/i.test(P.query);
+function route(method, P, headers, bodyTxt, scheme){
+  const segs = P.path.split("/").filter(Boolean);
+  const r = {badges:[], delay:0.5};
+  if(method==="POST") G.stats.posts++;
+  // Fuite : un numéro de carte dans l'URL
+  const leak = isLeak(P);
+  if(leak){ G.stats.leak++; G.svcPenalty+=1; G.svcIncidents.push("Un numéro de carte a été écrit en clair dans l'URL, donc dans le registre du serveur."); toast("Fuite ! Le numéro de carte est maintenant écrit dans le registre du serveur, visible par tout le personnel.", "bad"); }
+  if(P.full.length > 140) return err(414, "L'adresse est trop longue. Dans la vraie vie, la limite tourne autour de 2 000 caractères ; ici la borne est petite. Les grosses données vont dans le <b>body</b> d'un POST.");
+  let body=null, bodyErr=null;
+  if(method==="POST"){
+    if(!bodyTxt.trim()) bodyErr="Le body est vide. Un POST transporte ses données dans le body, en JSON.";
+    else { try{ body=JSON.parse(bodyTxt); } catch(e){ bodyErr="Le JSON du body est invalide. Vérifiez les accolades { }, les <b>guillemets doubles</b> autour des noms de champs, et les virgules."; } }
+    if(!bodyErr && (typeof body!=="object" || body===null || Array.isArray(body))) bodyErr="Le body doit être un objet JSON entre accolades : { ... }.";
+  }
+  const allow = a => err(405, null, {headers:{Allow:a}});
+
+  if(segs.length===0) return err(404, "Il manque le chemin après l'adresse : par exemple <b>/commandes</b>.");
+
+  if(segs[0]==="menu" && segs.length===1){
+    if(method!=="GET") return Object.assign(allow("GET"), {hint:"Le menu se <b>lit</b> : GET. Une réponse à un POST ne serait jamais mise en cache."});
+    return cached(P, ()=>({status:200, json:{plats:Object.entries(MENU).map(([id,p])=>({id:+id, nom:p.nom, prix:p.prix}))}}), r);
+  }
+
+  if(segs[0]==="plats"){
+    if(segs.length===1){
+      if(method!=="GET") return Object.assign(allow("GET"), {hint:"Pour chercher ou lire des plats, c'est <b>GET</b>. Une recherche en POST mettrait les critères dans le body : le lien ne pourrait pas être partagé."});
+      return cached(P, ()=>{
+        let list = Object.entries(MENU).map(([id,p])=>({id:+id, nom:p.nom, prix:p.prix, vegetarien:p.veg}));
+        const veg = P.q.get("vegetarien"); if(veg!==null) list = list.filter(x=>String(x.vegetarien)===(/^(true|1|oui)$/i.test(veg)?"true":"false"));
+        const pm = P.q.get("prixMax")||P.q.get("prixmax"); if(pm) list = list.filter(x=>x.prix<=+pm);
+        const out = {status:200, json:P.query?{lien:`https://${HOST}${P.full}`, plats:list}:{plats:list}};
+        if(P.query) out.give = {type:"link", query:P.query, label:"Lien", sub:"?"+P.query};
+        return out;
+      }, r);
+    }
+    if(segs.length===2){
+      if(method!=="GET") return Object.assign(allow("GET"), {hint:"Pour lire une fiche de plat, c'est <b>GET</b>, sans body."});
+      const id = +segs[1];
+      if(!MENU[id]) return err(404, `Le plat n°${esc(segs[1])} n'existe pas. Regardez la carte.`);
+      return cached(P, ()=>({status:200, json:{id, nom:MENU[id].nom, prix:MENU[id].prix, vegetarien:MENU[id].veg}, give:{type:"note", platId:id, price:MENU[id].prix, label:`${MENU[id].court} : ${MENU[id].prix} DT`}}), r);
+    }
+  }
+
+  if(segs[0]==="commandes"){
+    if(segs.length===1){
+      if(method==="GET") return Object.assign(allow("POST"), {hint: P.query ? "Pour <b>créer</b> une commande, c'est <b>POST</b>, et les données vont dans le <b>body</b>, pas dans l'URL." : "Cette adresse sert à créer des commandes : <b>POST</b>."});
+      if(method!=="POST") return Object.assign(allow("POST"), {hint:"Pour créer une commande, utilisez <b>POST</b>."});
+      if(bodyErr) return err(400, bodyErr);
+      const key = headers["idempotency-key"];
+      if(key && G.idem.has(key)){ const prev=G.idem.get(key); if(G.lag && !G.lag.outcome) lagResolve("key"); return {status:200, json:prev.json, headers:prev.headers, hint:"Requête <b>reconnue grâce à l'Idempotency-Key</b> : le serveur renvoie la même réponse et ne crée rien de plus.", badges:["déjà traitée"]}; }
+      if(body.plat!==undefined && body.plats===undefined) return err(400, "Le champ s'appelle <b>« plats »</b> (avec un s) et contient une liste : <code>[1, 5]</code>.");
+      const table = num(body.table);
+      if(isNaN(table)) return err(400, "Il manque le champ <b>« table »</b> : un nombre, par exemple <code>\"table\": 2</code>.");
+      if(table<1 || table>6 || !Number.isInteger(table)) return err(400, "Le restaurant a des tables numérotées de 1 à 6.");
+      if(!Array.isArray(body.plats) || !body.plats.length) return err(400, "Le champ <b>« plats »</b> doit être une liste de numéros entre crochets : <code>[1, 5]</code>.");
+      const items = body.plats.map(num);
+      const bad = items.findIndex(x=>!MENU[x]);
+      if(bad>=0) return err(400, `Le plat « ${esc(String(body.plats[bad]))} » n'existe pas. Utilisez les <b>numéros</b> de la carte (1 à 5).`);
+      const o = createOrder(table, items);
+      const resp = {status:201, json:{id:o.id, table, plats:items, total:o.total, statut:"en préparation"}, headers:{Location:`/commandes/${o.id}`}, badges:["POST : jamais mis en cache"], delay:0.6};
+      if(key) G.idem.set(key, {json:resp.json, headers:resp.headers});
+      if(G.lagShots>0){
+        G.lagShots=0;
+        G.lag = {round:(G.stats.lagOutcomes.length? 2 : (G.lagFor && G.lagFor.lag) || 1), cust:G.lagFor, who:G.lagFor?G.lagFor.name:"un client", table, items, outcome:null};
+        G.blindUntil = G.t + 14;
+        resp.lag = true;
+      }
+      tip("firstCreated", `<b>201 Created</b> : la commande n°${o.id} existe et part aux fourneaux. Quand l'assiette arrive sur le <b>passe</b>, cliquez dessus pour la prendre, puis cliquez sur le client.`);
+      return resp;
+    }
+    if(segs.length===2){
+      const id = +segs[1]; const o = G.orders.find(x=>x.id===id);
+      if(method==="GET"){ if(!o) return err(404, `Aucune commande n°${esc(segs[1])}.`); return {status:200, json:{id:o.id, table:o.table, plats:o.items, total:o.total, statut:{cooking:"en préparation",ready:"prête",served:"servie",cancelled:"annulée",wasted:"jetée"}[o.status]}}; }
+      if(method==="DELETE"){
+        if(!o || o.status==="cancelled") return err(404, `Aucune commande n°${esc(segs[1])} à annuler.`);
+        if(o.status==="served" || o.status==="wasted") return err(409, "Cette commande a déjà été servie : impossible de l'annuler.");
+        G.pass = G.pass.filter(it=>it.orderId!==o.id);
+        if(G.hand && G.hand.orderId===o.id) G.hand=null;
+        o.status="cancelled";
+        if(o.dup) G.stats.dupDeleted++;
+        if(o.auto && G.stats.f5) G.stats.f5.outcome="deleted";
+        G.tickets = G.tickets.filter(t=>!(t.kind==="dup" && t.orderId===o.id));
+        const t = G.tickets.find(t=>t.orderId===o.id && t.kind==="order"); if(t) { t.orderId=null; toast(`Vous avez annulé la commande n°${o.id} de la table ${o.table} : il faudra la renvoyer.`, "bad"); }
+        renderAll();
+        return {status:204, hint:`Commande n°${o.id} annulée : la cuisine arrête de la préparer.`, badges:["DELETE"]};
+      }
+      return Object.assign(allow("GET, DELETE"), {hint:"Sur une commande précise, on peut la lire (GET) ou l'annuler (DELETE)."});
+    }
+  }
+
+  if(segs[0]==="paiements" && segs.length===1){
+    if(method!=="POST") return Object.assign(allow("POST"), {hint: leak ? "Un paiement se fait en <b>POST</b>, avec la carte dans le <b>body</b>. Là, le numéro est parti dans l'URL : il est écrit dans le registre." : "Un paiement se crée avec <b>POST</b>."});
+    if(bodyErr) return err(400, bodyErr);
+    const key = headers["idempotency-key"];
+    if(key && G.idem.has(key)){ const prev=G.idem.get(key); return {status:200, json:prev.json, hint:"Paiement <b>reconnu grâce à l'Idempotency-Key</b> : le client n'est pas débité une seconde fois.", badges:["déjà traité"]}; }
+    const cmd = num(body.commande);
+    if(isNaN(cmd)) return err(400, "Il manque le champ <b>« commande »</b> : le numéro de la commande, par exemple <code>\"commande\": 101</code>.");
+    const o = G.orders.find(x=>x.id===cmd);
+    if(!o) return err(404, `La commande n°${cmd} n'existe pas.`);
+    if(!body.carte) return err(400, "Il manque le champ <b>« carte »</b> avec le numéro de carte du client.");
+    const c = G.customers.find(x=>x.orderId===cmd && x.kind==="order");
+    if(!c) return err(409, "Aucun client n'attend l'addition pour cette commande.");
+    if(c.pay!=="card") return err(409, `${c.name} paie en espèces.`);
+    if(String(body.carte).replace(/\s/g,"") !== c.card.replace(/\s/g,"")) return err(402, "Carte refusée : le numéro ne correspond pas à celui du client.");
+    if(c.state!=="waitPay") return err(409, `${c.name} n'a pas encore demandé l'addition.`);
+    const pid = G.nextPay++;
+    if(o.paid){
+      G.stats.doubleCharge++;
+      incident(`${c.name} a été débité·e deux fois pour la commande n°${o.id} ! Un POST renvoyé crée un nouveau paiement.`, 1);
+    } else { o.paid=true; addMoney(o.total); G.stats.paidCard++; }
+    if(G.spy){
+      if(scheme==="http://"){ G.stats.spyStolen++; G.spyMood="sly"; incident(`L'espion de la table 6 a lu le numéro de carte de ${c.name} : la requête est passée en http://, sans chiffrement.`, 1); const s=G.customers.find(x=>x.kind==="spy"); if(s) bubble(s, `Merci pour la carte ${c.card} !`, 5); }
+      else { G.stats.spySafe++; G.spyMood="mad"; const s=G.customers.find(x=>x.kind==="spy"); if(s) bubble(s, "Chiffré… impossible à lire !", 4, "mad"); }
+    }
+    const resp = {status:201, json:{id:pid, commande:o.id, montant:o.total, statut:"accepté"}, headers:{Location:`/paiements/${pid}`}, badges:["POST : jamais mis en cache"], delay:0.8,
+      give:{type:"receipt", commande:o.id, label:`Reçu n°${o.id}`}};
+    if(key) G.idem.set(key, {json:resp.json});
+    return resp;
+  }
+
+  return err(404, "Cette adresse n'existe pas sur le serveur. Vérifiez le chemin dans le livre de recettes.");
+}
+
+function cached(P, make, r){
+  const k = P.full;
+  if(G.cache.has(k)){
+    G.stats.cacheHits++;
+    tip("cacheHit", "Réponse <b>instantanée</b> : ce GET avait déjà été demandé, sa réponse était gardée <b>en cache</b>. Un POST, lui, repasse toujours par la cuisine.");
+    return Object.assign({}, G.cache.get(k), {badges:["depuis le cache · 0 ms"], hot:true, delay:0});
+  }
+  const out = make();
+  G.cache.set(k, out);
+  return Object.assign({}, out, {badges:["mis en cache"], delay:1.2});
+}
+
+function send(req){
+  if(!G || G.ended) return;
+  if(blocked()){ toast("Le jeu est en pause.", "bad"); return; }
+  const P = parsePath(req.path);
+  const scheme = P.scheme || req.scheme;
+  const headers = parseHeaders(req.headers);
+  const r = route(req.method, P, headers, req.body, scheme);
+  pushLog(req.method, P.full, r.status, scheme, isLeak(P)?"leak":null);
+  G.lastStatus = r.lag ? 0 : r.status; G.lastStatusAt = Date.now();
+  if(r.status>=400) tip("firstError", "Une erreur <b>4xx</b> veut dire que la requête est mal écrite. Lisez l'explication sous la réponse et réessayez.");
+  if(r.lag){
+    G.lagReq = {...req};
+    showPending();
+    schedule(6, showTimeout);
+    renderAll();
+    return;
+  }
+  const done = ()=>{ showResponse(r, req.method, P.full); if(r.give) givePass(r.give); };
+  if(r.delay>0){ showPending(); schedule(r.delay, done); } else done();
+  renderAll();
+}
+function givePass(g){
+  G.pass.push(Object.assign({uid:uid()}, g));
+  if(G.pass.length>9){ const i=G.pass.findIndex(x=>x.type!=="plate"); if(i>=0) G.pass.splice(i,1); }
+  renderPass();
+}
+
+/* ---------- Rendu ---------- */
+function renderAll(){ renderHUD(); renderTables(); renderPass(); renderHand(); renderRail(); renderStoves(); renderLog(); }
+function clock(){ const m = G.svc.start + Math.floor(G.t); return `${String(Math.floor(m/60)%24).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`; }
+function renderHUD(){
+  if(!G.svc) return;
+  $("#svcName").textContent = `${G.svc.name} · ${clock()}`;
+  $("#money").textContent = G.money;
+  $("#rep").textContent = G.ratings.length ? (G.ratings.reduce((a,b)=>a+b,0)/G.ratings.length).toFixed(1)+" ★" : "–";
+  const chips = [];
+  if(G.lagShots>0 || G.t<G.blindUntil) chips.push("Wi-Fi saturé");
+  if(G.spy) chips.push("Espion en salle");
+  if(G.paused) chips.push("Pause");
+  $("#chips").innerHTML = chips.map(c=>`<span class="chip-ev">${c}</span>`).join("");
+  $("#pauseBtn").textContent = G.paused ? "Reprendre" : "Pause";
+}
+let tableSig = "";
+function bubbleHTML(c){
+  if(c.bubbleTxt && G.t < c.bubbleUntil) return `<span class="bubble ${moodOf(c)==="mad"?"mad":""}">${esc(c.bubbleTxt)}</span>`;
+  switch(c.state){
+    case "seated": return `<span class="bubble call">Je peux commander ?</span>`;
+    case "waitFood": return `<span class="bubble">${dishIcons(c.items.slice(0,4))}${c.items.length>4?"…":""}</span>`;
+    case "eating": return `<span class="bubble">Miam…</span>`;
+    case "waitPay": return `<span class="bubble call">${ICON.card} L'addition !</span>`;
+    case "waitInfo": return `<span class="bubble">${c.kind==="link"?ICON.link+" Un lien ?":"Prix : "+MENU[c.plat].court+" ?"}</span>`;
+    case "spy": return "";
+  }
+  return "";
+}
+function renderTables(){
+  if(!G.svc) return;
+  const holding = !!G.hand;
+  $("#tables").className = "tables" + (holding ? " holding" : "");
+  let html = "";
+  for(let n=1;n<=6;n++){
+    const c = G.customers.find(x=>x.table===n);
+    let seat = `<span class="libre">Table libre</span>`, onTop = "";
+    if(c){
+      const mood = moodOf(c);
+      const av = c.group ? `<span class="group">${c.group.map(k=>avatar(LOOKS[k], mood, 50)).join("")}</span>` : avatar(c.lookObj, mood, 66);
+      const pc = c.patience>55?"":c.patience>25?"mid":"low";
+      const showPat = ["seated","waitFood","waitPay","waitInfo"].includes(c.state);
+      seat = `<button class="cust ${c.kind==="spy"?"spy":""} ${c.state==="leaving"?"leaving":""} ${G.t-c.arrived<0.7?"arrive":""}" type="button" data-uid="${c.uid}" aria-label="${esc(c.name)}, table ${n}">
+        ${bubbleHTML(c)}${av}
+        ${showPat?`<span class="pat ${pc}" data-pat="${c.uid}"><i style="width:${c.patience}%"></i></span>`:`<span class="pat" style="visibility:hidden"></span>`}
+      </button>`;
+      if(c.state==="eating" || (c.state==="waitPay")) onTop = dishIcons(c.items.slice(0,4));
+      if(c.kind==="spy") onTop = ICON.laptop;
+    }
+    html += `<div class="tbl"><div class="seat">${seat}</div><div class="top"><span class="num">${n}</span>${onTop}</div></div>`;
+  }
+  $("#tables").innerHTML = html;
+  tableSig = sig();
+}
+function sig(){ return G.customers.map(c=>c.uid+c.state+moodOf(c)+(c.bubbleTxt&&G.t<c.bubbleUntil?"b":"")).join("|")+(G.hand?"h":""); }
+function renderTick(){
+  if(sig()!==tableSig) renderTables();
+  else G.customers.forEach(c=>{ const el=document.querySelector(`[data-pat="${c.uid}"]`); if(el){ el.firstElementChild.style.width=c.patience+"%"; el.className="pat "+(c.patience>55?"":c.patience>25?"mid":"low"); } });
+  renderStoves(); renderHUD();
+  if(G.blindWas !== (G.t<G.blindUntil)){ G.blindWas = G.t<G.blindUntil; renderLog(); }
+}
+function itemHTML(it){
+  if(it.type==="plate") return `<span class="icons">${dishIcons(it.items)}</span><span class="lab">n°${it.orderId} · table ${it.table}</span>`;
+  if(it.type==="note") return `<span class="icons">${ICON.note}</span><span class="lab">${esc(it.label)}</span>`;
+  if(it.type==="link") return `<span class="icons">${ICON.link}</span><span class="lab">${esc(it.sub)}</span>`;
+  if(it.type==="receipt") return `<span class="icons">${ICON.receipt}</span><span class="lab">${esc(it.label)}</span>`;
+}
+function renderPass(){
+  $("#pass").innerHTML = G.pass.length ? G.pass.map(it=>`<button class="item" type="button" data-pass="${it.uid}">${itemHTML(it)}</button>`).join("")
+    : `<span class="empty">Le passe est vide. Les assiettes et les réponses arrivent ici.</span>`;
+}
+function renderHand(){
+  const h=$("#hand");
+  if(G.hand){ h.className="hand full"; h.innerHTML = `<div class="item" style="border:0;animation:none;cursor:pointer">${itemHTML(G.hand)}</div>`; }
+  else { h.className="hand"; h.textContent="Mains vides : prenez un plat sur le passe"; }
+  $("#tables").classList.toggle("holding", !!G.hand);
+}
+function renderRail(){
+  $("#rail").innerHTML = G.tickets.length ? G.tickets.map(t=>`<div class="tk ${t.kind}" data-tk="${t.uid}" role="button" tabindex="0">
+      <span class="k">${{order:"Commande",pay:"Paiement",info:"Demande",dup:"Doublon"}[t.kind]}</span>
+      <div class="tt">${esc(t.title)}</div>
+      <ul>${t.lines.map(l=>`<li>${esc(l)}</li>`).join("")}</ul>
+      ${t.orderId && t.kind==="order" ? `<span class="num">n°${t.orderId}</span>`:""}</div>`).join("")
+    : `<span class="none">Aucun ticket. Prenez les commandes en salle.</span>`;
+}
+function renderStoves(){
+  const el=$("#stoves"); if(!G.svc) return;
+  const blind = G.t < G.blindUntil;
+  const cooking = G.orders.filter(o=>o.status==="cooking");
+  el.parentElement.querySelectorAll(".blind").forEach(b=>b.remove());
+  el.innerHTML = cooking.length ? cooking.map(o=>`<div class="stove ${o.dup?"dup":""}"><span>n°${o.id} · table ${o.table} · ${o.items.length} plat${o.items.length>1?"s":""}</span><span class="bar"><i style="width:${Math.round(o.prog*100)}%"></i></span></div>`).join("")
+    : `<span class="muted">Rien sur le feu.</span>`;
+  if(blind) el.parentElement.insertAdjacentHTML("beforeend", `<div class="blind">Liaison avec la cuisine coupée par le Wi-Fi…<br>Impossible de voir ce qu'elle a reçu.</div>`);
+}
+function pushLog(method, full, status, scheme, flag){
+  const line = {t:G.svc?clock():"", method, full, status, scheme, flag, at:G.t};
+  G.log.unshift(line); if(G.log.length>30) G.log.pop();
+  renderLog();
+}
+function renderLog(){
+  const el=$("#log"); if(!G) return;
+  const blind = G.svc && G.t < G.blindUntil;
+  el.parentElement.querySelectorAll(".blind").forEach(b=>b.remove());
+  el.innerHTML = G.log.length ? G.log.map(l=>{
+    const body = l.method==="POST" ? ` <span style="opacity:.6">[body non enregistré]</span>` : "";
+    const cls = l.flag==="leak" ? "leak" : "";
+    const http = l.scheme==="http://" ? ` <span class="warn">non chiffré</span>` : "";
+    const note = l.flag && l.flag!=="leak" ? ` <span class="warn">(${esc(l.flag)})</span>` : "";
+    return `<div class="${cls}">${l.t} ${l.method} ${esc(l.full)} → ${l.status}${body}${http}${note}</div>`;
+  }).join("") : `<span class="muted">Chaque requête reçue est notée ici.</span>`;
+  if(blind) el.parentElement.insertAdjacentHTML("beforeend", `<div class="blind">Registre inaccessible pendant la panne Wi-Fi.</div>`);
+}
+function showPending(){ $("#resp").innerHTML = `<span class="muted"><span class="spin"></span>Requête envoyée, en attente de la réponse…</span>`; }
+function showTimeout(){
+  $("#resp").innerHTML = `<div class="r-head"><span class="pill sx">Délai dépassé</span><span class="badge hot">Wi-Fi saturé</span></div>
+    <p class="r-hint">Aucune réponse n'est revenue. <b>Impossible de savoir</b> si la cuisine a reçu la commande ou non.</p>
+    <button class="resend" type="button" id="resendBtn">Renvoyer la même requête</button>
+    <p class="r-hint" style="color:var(--steel-muted)">Ou attendez de voir si l'assiette arrive…</p>`;
+  $("#resendBtn").addEventListener("click", ()=>{ if(G.lagReq) send(G.lagReq); });
+}
+function showResponse(r, method, full){
+  const code = r.status, cls = "s"+String(code)[0];
+  const hdrs = r.headers ? Object.entries(r.headers).map(([k,v])=>`<div class="r-hdr">${k}: ${esc(v)}</div>`).join("") : "";
+  $("#resp").innerHTML = `<div class="r-head"><span class="pill ${cls}">${code} ${STATUS[code]||""}</span>${(r.badges||[]).map(b=>`<span class="badge ${r.hot?"hot":""}">${b}</span>`).join("")}<span class="badge">${method} ${esc(full)}</span></div>
+    ${hdrs}${r.json?`<pre>${esc(JSON.stringify(r.json,null,2))}</pre>`:""}${r.hint?`<p class="r-hint">${r.hint}</p>`:""}
+    ${r.give && r.give.type!=="receipt" ? `<p class="r-hint">La réponse est posée sur le <b>passe</b> : apportez-la au client.</p>`:""}
+    ${r.give && r.give.type==="receipt" ? `<p class="r-hint">Le <b>reçu</b> est sur le passe : apportez-le au client.</p>`:""}`;
+}
+function showSay(c){
+  if(!c.say){ $("#dialogue").innerHTML = `<span class="who">${esc(c.name)}</span><p>…</p><p class="help">Ce client ne commande rien. Il fixe son écran.</p>`; return; }
+  $("#dialogue").innerHTML = `<span class="who">${esc(c.name)} · table ${c.table}</span><p>« ${esc(c.say)} »</p>`;
+}
+
+/* ---------- Bulles du chef & toasts ---------- */
+function tip(key, html){
+  if(G.training || G.tipsShown.has(key)) return;
+  G.tipsShown.add(key); tipQueue.push(html); nextTip();
+}
+function nextTip(){
+  if(tipOpen || !tipQueue.length) return;
+  const html = tipQueue.shift(); tipOpen = true;
+  const el=$("#tip");
+  el.innerHTML = `<div>${avatar(LOOKS.chef,"happy",56)}</div><div><span class="who">Cheffe Rania</span><p>${html}</p><button type="button" id="tipOk">Compris</button></div>`;
+  el.hidden=false;
+  $("#tipOk").addEventListener("click", ()=>{ el.hidden=true; tipOpen=false; nextTip(); });
+}
+function toast(text, kind){
+  const t=document.createElement("div"); t.className="toast "+(kind||""); t.textContent=text;
+  $("#toasts").appendChild(t); setTimeout(()=>t.remove(), 5500);
+}
+
+/* ---------- Écrans ---------- */
+function openModal(html){ $("#sheet").innerHTML=html; $("#modal").hidden=false; modalOpen=true; }
+function closeModal(){ $("#modal").hidden=true; modalOpen=false; }
+function starsHTML(n){ return `<div class="stars" aria-label="${n} étoiles sur 5">${"★".repeat(n)}<span class="off">${"★".repeat(5-n)}</span></div>`; }
+
+function showStart(){
+  const cast = ["yasmine","karim","haddad","sami","nour","ines","adam"].map(k=>avatar(LOOKS[k],"happy",56)).join("");
+  openModal(`
+    <h1>REST<span>-aurant</span></h1>
+    <p class="lead">Vous êtes serveur dans le restaurant le plus geek de Sidi Bou Saïd. Ici, la cuisine ne comprend qu'une langue : les <b>requêtes HTTP</b>. Survivez au déjeuner, puis au dîner du vendredi.</p>
+    <div class="cast">${cast}${avatar(LOOKS.chef,"happy",64)}</div>
+    <div class="how">
+      <div><span class="n">1</span><b>Prendre la commande</b><p>Cliquez sur un client qui lève la main. Son ticket arrive en cuisine.</p></div>
+      <div><span class="n">2</span><b>Écrire la requête</b><p>Cherchez la recette dans le livre et écrivez la requête dans la borne de la cuisine.</p></div>
+      <div><span class="n">3</span><b>Prendre l'assiette</b><p>Quand elle arrive sur le passe, cliquez dessus pour l'avoir en main.</p></div>
+      <div><span class="n">4</span><b>Servir</b><p>Cliquez sur le bon client. Plus il attend, moins il laisse de pourboire.</p></div>
+    </div>
+    <div class="start-btns">
+      <button class="big" type="button" id="tuto">Apprendre à jouer (10 min)</button>
+      <button class="ghostbtn" type="button" id="go">Je connais déjà : jouer directement</button>
+    </div>
+    <p style="color:var(--muted)">Le tutoriel est recommandé si vous n'avez jamais écrit de requête HTTP : 7 petites leçons, une visite de l'écran, puis une commande d'entraînement sans chrono.</p>`);
+  $("#tuto").addEventListener("click", startTutorial);
+  $("#go").addEventListener("click", ()=>{ closeModal(); startService(0); openBook("carte"); });
+}
+
+function svcStars(){
+  const avg = G.ratings.length ? G.ratings.reduce((a,b)=>a+b,0)/G.ratings.length : 3;
+  return Math.max(1, Math.min(5, Math.round(avg - G.svcPenalty*0.5)));
+}
+function showBilan(){
+  const n = svcStars();
+  const happy = G.ratings.filter(r=>r>=3).length;
+  const last = G.svcIdx===SERVICES.length-1;
+  openModal(`
+    <h2>Fin du ${G.svc.name.toLowerCase()}</h2>
+    ${starsHTML(n)}
+    <div class="kpis">
+      <div class="kpi"><b>${G.svcMoney} DT</b><span>encaissés ce service</span></div>
+      <div class="kpi"><b>${happy} / ${G.ratings.length}</b><span>clients satisfaits</span></div>
+      <div class="kpi"><b>${G.money} DT</b><span>en caisse au total</span></div>
+    </div>
+    ${G.svcIncidents.length ? `<p><b>Incidents :</b></p><ul class="events">${G.svcIncidents.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>` : `<p>Aucun incident. Service impeccable.</p>`}
+    <button class="big" type="button" id="nextBtn">${last ? "Lire le carnet de la cheffe" : "Passer au dîner du vendredi"}</button>`);
+  $("#nextBtn").addEventListener("click", ()=>{ closeModal(); if(last) showCarnet(); else startService(G.svcIdx+1); });
+}
+
+function showCarnet(){
+  const S = G.stats;
+  const lag = o => S.lagOutcomes.filter(x=>x.outcome===o).length;
+  const L = (title, you, fix) => `<div class="lesson"><b>${title}</b><span class="you">${you}</span>${fix?`<span class="fix">${fix}</span>`:""}</div>`;
+  const av = [
+    L("Des données riches dans le body", `Vous avez envoyé ${S.orderPosts} commande${S.orderPosts>1?"s":""} en POST, avec jusqu'à ${S.maxItems} plat${S.maxItems>1?"s":""} dans un seul body JSON.`),
+    L("La méthode faite pour créer", S.firstOrder ? `Chaque POST /commandes a reçu 201 Created et un numéro (de n°${S.firstOrder} à n°${S.lastOrder}), que vous avez réutilisé pour encaisser.` : "Un POST réussi renvoie 201 Created et le numéro de la ressource créée."),
+    L("Les données restent hors de l'URL", S.leak ? `Attention : ${S.leak} requête${S.leak>1?"s ont":" a"} mis un numéro de carte dans l'URL. Il est resté écrit dans le registre du serveur.` : "Le registre du serveur n'a gardé aucun numéro de carte : ils voyageaient dans le body de vos POST /paiements."),
+    L("Gros volumes", S.banquet ? `Le banquet des Ben Salah tenait dans un seul body (${S.banquet} plats). En GET, chaque plat allonge l'URL jusqu'à la limite (erreur 414).` : "Le body d'un POST peut transporter de longues listes et même des fichiers, sans limite de taille d'URL.")
+  ].join("");
+  let idemTxt = [];
+  if(lag("dup")) idemTxt.push("Pendant la panne Wi-Fi, renvoyer la requête a créé une commande en double.");
+  if(lag("waited")) idemTxt.push("Une fois, vous avez attendu au lieu de renvoyer : la cuisine avait bien reçu la commande.");
+  if(lag("key")) idemTxt.push("Avec l'Idempotency-Key, votre renvoi a été reconnu : aucun doublon.");
+  if(lag("lost")) idemTxt.push("Pendant la panne, le client est parti avant d'être servi.");
+  if(S.doubleCharge) idemTxt.push(`Un client a été débité deux fois (${S.doubleCharge} paiement${S.doubleCharge>1?"s":""} en double).`);
+  if(!idemTxt.length) idemTxt.push("Envoyer deux fois le même POST crée deux ressources.");
+  const f5 = S.f5 ? (S.f5.outcome==="deleted" ? `Le doublon de Nour (n°${S.f5.id}) a été annulé avec DELETE avant d'être servi.` : `Le doublon de Nour (n°${S.f5.id}) a été cuisiné pour rien.`) : "Actualiser une page obtenue par POST renvoie le POST.";
+  const li = [
+    L("POST n'est pas idempotent", idemTxt.join(" "), "Solution : une clé d'idempotence (Idempotency-Key), et désactiver le bouton après le premier clic."),
+    L("Le renvoi au rafraîchissement (F5)", f5, "Solution : Post/Redirect/Get. Après le POST, rediriger (303) vers GET /commandes/101."),
+    L("Pas de mise en cache", `${S.cacheHits} réponse${S.cacheHits>1?"s":""} GET ${S.cacheHits>1?"sont revenues":"est revenue"} instantanément du cache. Vos ${S.posts} POST sont tous repassés par la cuisine.`, "Solution : utiliser GET pour lire (menu, prix)."),
+    L("Ni favori, ni lien partageable", S.linkOk ? "Adam a reçu un lien qui contient la recherche : rest-aurant.tn/plats?vegetarien=true. En POST, la recherche aurait été dans le body et le lien aurait été vide." : "Adam n'a pas reçu son lien. En POST, la recherche est dans le body : impossible de la partager par lien.", "Solution : GET avec des paramètres dans l'URL pour les recherches."),
+    L("POST ne chiffre rien", S.spyStolen ? `L'espion a lu ${S.spyStolen} numéro${S.spyStolen>1?"s":""} de carte envoyé${S.spyStolen>1?"s":""} en http:// : le body était caché de l'URL, pas du réseau.` : S.spySafe ? "Vos paiements en https:// sont restés illisibles pour l'espion." : "Sans https://, le body d'un POST se lit sur le réseau.", "Solution : toujours https:// pour les données sensibles.")
+  ].join("");
+  const all = G.allRatings.length ? G.allRatings.reduce((a,b)=>a+b,0)/G.allRatings.length : 3;
+  openModal(`
+    <h2>Le carnet de la cheffe Rania</h2>
+    <p class="lead">Ce que vos deux services ont montré sur la méthode POST. Moyenne de la soirée : <b>${all.toFixed(1)} ★</b>, caisse : <b>${G.money} DT</b>.</p>
+    <div class="carnet">
+      <div class="col av"><h3>Les avantages de POST</h3>${av}</div>
+      <div class="col li"><h3>Les limites de POST</h3>${li}</div>
+    </div>
+    <div class="rule"><b>La règle de la maison :</b> POST pour <b>envoyer et créer</b> (commande, paiement, inscription, fichier), toujours avec https:// et une protection contre les doublons. GET pour <b>lire et partager</b> (menu, prix, recherche).</div>
+    <button class="big" type="button" id="again">Rejouer depuis le début</button>`);
+  $("#again").addEventListener("click", ()=>{ closeModal(); G = freshGame(); resetBoard(); showStart(); });
+}
+
+/* ---------- Livre ---------- */
+function openBook(id){
+  $("#book").hidden=false; G.bookPage = id;
+  $("#tabs").innerHTML = BOOK.map(p=>`<button type="button" data-p="${p.id}" class="${p.id===id?"on":""}">${p.label}</button>`).join("");
+  $("#page").innerHTML = BOOK.find(p=>p.id===id).html();
+  $("#page").scrollTop = 0;
+}
+$("#tabs").addEventListener("click", e=>{ const b=e.target.closest("[data-p]"); if(b) openBook(b.dataset.p); });
+$("#bookBtn").addEventListener("click", ()=>{ if($("#book").hidden) openBook((document.querySelector("#tabs .on")||{}).dataset?.p || "carte"); else $("#book").hidden=true; });
+$("#bookClose").addEventListener("click", ()=>{ $("#book").hidden=true; });
+
+/* ---------- Interactions ---------- */
+$("#tables").addEventListener("click", e=>{
+  const b = e.target.closest("[data-uid]"); if(!b || blocked()) return;
+  const c = G.customers.find(x=>x.uid===+b.dataset.uid); if(!c) return;
+  if(G.hand){ serve(c); renderHand(); return; }
+  if(c.state==="seated") takeOrder(c); else showSay(c);
+});
+$("#pass").addEventListener("click", e=>{
+  const b = e.target.closest("[data-pass]"); if(!b || blocked()) return;
+  const i = G.pass.findIndex(x=>x.uid===+b.dataset.pass); if(i<0) return;
+  const it = G.pass.splice(i,1)[0];
+  if(G.hand) G.pass.push(G.hand);
+  G.hand = it; renderPass(); renderHand();
+});
+function handBack(){ if(!G||!G.hand||blocked()) return; G.pass.push(G.hand); G.hand=null; renderPass(); renderHand(); }
+$("#hand").addEventListener("click", handBack);
+$("#hand").addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); handBack(); } });
+$("#trash").addEventListener("click", ()=>{
+  if(!G||!G.hand||blocked()) return;
+  const it=G.hand; G.hand=null;
+  if(it.type==="plate"){ const o=G.orders.find(x=>x.id===it.orderId); if(o && o.status==="ready") waste(o, `Assiette n°${o.id} jetée.`); }
+  renderPass(); renderHand();
+});
+$("#rail").addEventListener("click", e=>{
+  const t = e.target.closest("[data-tk]"); if(!t) return;
+  const tk = G.tickets.find(x=>x.uid===+t.dataset.tk); if(!tk) return;
+  const c = G.customers.find(x=>x.uid===tk.cust);
+  if(c) showSay(c); else $("#dialogue").innerHTML = `<span class="who">${esc(tk.title)}</span><p>${tk.lines.map(esc).join(". ")}.</p>`;
+});
+$("#borne").addEventListener("submit", e=>{
+  e.preventDefault();
+  send({method:$("#m").value, scheme:$("#scheme").value, path:$("#path").value, headers:$("#hdrs").value, body:$("#body").value});
+});
+$("#borne").addEventListener("keydown", e=>{ if(e.key==="Enter" && (e.ctrlKey||e.metaKey)){ e.preventDefault(); $("#borne").requestSubmit(); } });
+$("#m").addEventListener("change", ()=>{ $("#body").disabled = $("#m").value==="GET" || $("#m").value==="DELETE"; });
+$("#clearBtn").addEventListener("click", ()=>{ $("#path").value=""; $("#hdrs").value=""; $("#body").value=""; $("#path").focus(); });
+$("#pauseBtn").addEventListener("click", ()=>{ if(!G||!G.svc||G.ended) return; G.paused=!G.paused; renderHUD(); });
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") $("#book").hidden=true; });
+
+/* ---------- Démarrage ---------- */
+$("#ardoise").innerHTML = Object.entries(MENU).map(([id,p])=>`<li><span><span class="id">${id}</span>${p.nom}${p.veg?' <span class="veg">(végé)</span>':""}</span><span>${p.prix}</span></li>`).join("");
+$("#waiterAv").innerHTML = avatar(LOOKS.waiter,"happy",58);
+function resetBoard(){
+  $("#tables").innerHTML = [1,2,3,4,5,6].map(n=>`<div class="tbl"><div class="seat"><span class="libre">Table libre</span></div><div class="top"><span class="num">${n}</span></div></div>`).join("");
+  $("#resp").innerHTML = `<span class="muted">La réponse du serveur s'affichera ici.</span>`;
+  $("#book").hidden = true;
+  renderRail(); renderPass(); renderHand(); renderLog();
+}
+
+/* ---------- Tutoriel : leçons ---------- */
+const LESSONS = [
+  ()=>`<span class="kick">Leçon 1 sur 7 · L'idée du jeu</span>
+    <h2>Un restaurant qui parle le langage d'Internet</h2>
+    <p class="lead">Pas besoin de connaître l'informatique : tout s'explique avec le restaurant.</p>
+    <div class="trio">
+      <div>${avatar(LOOKS.yasmine,"happy",52)}<b>Les clients</b><p>Ils parlent normalement : « Une pizza, s'il vous plaît ! »</p><p class="irl">Dans la vraie vie : une personne qui utilise un site ou une appli.</p></div>
+      <div>${avatar(LOOKS.waiter,"happy",52)}<b>Vous</b><p>Vous traduisez leur demande en <b>requête HTTP</b>, puis vous leur apportez le résultat.</p><p class="irl">Dans la vraie vie : l'appli ou le navigateur, qui envoie des messages au serveur.</p></div>
+      <div>${avatar(LOOKS.chef,"happy",52)}<b>La cuisine</b><p>Elle ne comprend <b>que</b> les requêtes HTTP, écrites exactement comme il faut.</p><p class="irl">Dans la vraie vie : le serveur, qu'on appelle aussi l'<b>API</b>.</p></div>
+    </div>
+    <p class="note"><b>HTTP</b> est la langue que les applis et les serveurs utilisent pour se parler. Quand vous ouvrez une page web ou commandez en ligne, votre téléphone envoie des requêtes HTTP sans que vous le voyiez.</p>`,
+  ()=>`<span class="kick">Leçon 2 sur 7 · La requête</span>
+    <h2>Une requête HTTP, c'est un ticket de commande</h2>
+    <p>Elle a quatre parties. Voici une vraie requête du jeu :</p>
+    <div class="anat">
+      <div class="row"><span class="tag m">POST</span><span class="tag u">https://rest-aurant.tn/commandes</span></div>
+      <div class="row"><span class="tag h">Idempotency-Key: commande-sofia</span></div>
+      <div class="row"><span class="tag b">{ "table": 2, "plats": [1, 5] }</span></div>
+    </div>
+    <div class="legend">
+      <div><span class="tag m">Méthode</span><span>Le <b>verbe</b> : ce que vous voulez faire (lire, créer, supprimer…).</span></div>
+      <div><span class="tag u">Adresse</span><span><b>Où</b> envoyer la requête, et sur quoi elle porte.</span></div>
+      <div><span class="tag h">En-têtes</span><span>Des <b>informations en plus</b>. Souvent vides : ils sont facultatifs.</span></div>
+      <div><span class="tag b">Body</span><span>Le <b>contenu</b> envoyé (le « corps »), par exemple le détail de la commande.</span></div>
+    </div>
+    <p class="note">Dans le jeu, la <b>borne de la cuisine</b> a une case pour chacune de ces parties.</p>`,
+  ()=>`<span class="kick">Leçon 3 sur 7 · Les méthodes</span>
+    <h2>La méthode, c'est le verbe</h2>
+    <div class="tablewrap"><table>
+      <tr><th>Méthode</th><th>Ça veut dire</th><th>Au restaurant</th></tr>
+      <tr><td><span class="tag m">GET</span></td><td><b>Lire</b>, consulter une information</td><td>« Combien coûte le tiramisu ? »</td></tr>
+      <tr><td><span class="tag m">POST</span></td><td><b>Créer</b> quelque chose de nouveau, envoyer des données</td><td>« Je voudrais commander. » « Je paie par carte. »</td></tr>
+      <tr><td><span class="tag m">PUT</span></td><td><b>Remplacer</b> quelque chose qui existe</td><td>Pas utilisé dans ce jeu</td></tr>
+      <tr><td><span class="tag m">DELETE</span></td><td><b>Supprimer</b></td><td>« Annulez cette commande. »</td></tr>
+    </table></div>
+    <p class="note">Ce jeu est centré sur <b>POST</b> : quand l'utiliser, ses avantages et ses pièges. <b>GET</b> sert de point de comparaison.</p>`,
+  ()=>`<span class="kick">Leçon 4 sur 7 · L'adresse</span>
+    <h2>L'adresse (URL), pièce par pièce</h2>
+    <div class="anat"><div class="row"><span class="tag s">https://</span><span class="tag d">rest-aurant.tn</span><span class="tag p">/plats</span><span class="tag q">?vegetarien=true</span></div></div>
+    <div class="legend">
+      <div><span class="tag s">Protocole</span><span>La façon de se parler : <b>https://</b> est chiffré (personne ne peut lire en route), <b>http://</b> circule en clair.</span></div>
+      <div><span class="tag d">Domaine</span><span>Le nom du serveur. Dans la borne, il est déjà écrit pour vous.</span></div>
+      <div><span class="tag p">Chemin</span><span>Ce qui est visé : <code>/commandes</code>, <code>/paiements</code>, <code>/plats/4</code> (le plat n°4)…</span></div>
+      <div><span class="tag q">Paramètres</span><span>Facultatifs. Après un <b>?</b>, des options de recherche : <code>?vegetarien=true</code>.</span></div>
+    </div>
+    <p class="note">Dans la borne, vous choisissez le protocole dans une liste, puis vous tapez seulement le <b>chemin</b> (et les paramètres s'il y en a).</p>`,
+  ()=>`<span class="kick">Leçon 5 sur 7 · Le body</span>
+    <h2>Écrire le body en JSON</h2>
+    <p>Le body d'une requête POST s'écrit en <b>JSON</b>, un format simple pour décrire des données :</p>
+    <pre>{ "table": 2, "plats": [1, 5] }</pre>
+    <ul class="rules">
+      <li>Tout est entre <b>accolades</b> <code>{ }</code>.</li>
+      <li>Chaque information a un <b>nom entre guillemets droits</b>, deux-points, puis la valeur : <code>"table": 2</code>.</li>
+      <li>Les informations sont séparées par des <b>virgules</b>.</li>
+      <li>Un <b>nombre</b> s'écrit sans guillemets : <code>2</code>. Un <b>texte</b> s'écrit entre guillemets : <code>"1111 2222"</code>.</li>
+      <li>Une <b>liste</b> s'écrit entre crochets : <code>[1, 5]</code>. Deux pizzas : <code>[1, 1]</code>.</li>
+    </ul>
+    <div class="jsonx">
+      <div><span class="ko">✗</span><code>{ table: 2, "plats": [1] }</code><span class="why">Guillemets oubliés autour de table.</span></div>
+      <div><span class="ko">✗</span><code>{ "table": 2 "plats": [1] }</code><span class="why">Virgule oubliée entre les deux informations.</span></div>
+      <div><span class="ko">✗</span><code>{ "table": 2, "plats": 1, 5 }</code><span class="why">La liste doit être entre crochets.</span></div>
+      <div><span class="okk">✓</span><code>{ "table": 2, "plats": [1, 5] }</code><span class="why">Correct.</span></div>
+    </div>
+    <p class="note">En cas d'erreur, pas de panique : la cuisine répond <b>400</b> et explique ce qui ne va pas.</p>`,
+  ()=>`<span class="kick">Leçon 6 sur 7 · La réponse</span>
+    <h2>La cuisine répond toujours par un code</h2>
+    <p>Un nombre à trois chiffres. Le premier chiffre suffit à savoir si ça a marché : <b>2</b> = réussi, <b>4</b> = la requête a un problème.</p>
+    <div class="codes">
+      <div><b>201 Created</b><span>C'est créé. La réponse normale d'un POST réussi.</span></div>
+      <div><b>200 OK</b><span>C'est bon, voici l'information demandée.</span></div>
+      <div><b>204 No Content</b><span>C'est fait (par exemple une annulation), rien à renvoyer.</span></div>
+      <div class="e"><b>400 Bad Request</b><span>La requête est mal écrite : JSON, champ oublié…</span></div>
+      <div class="e"><b>404 Not Found</b><span>Cette adresse ou ce numéro n'existe pas.</span></div>
+      <div class="e"><b>405 Method Not Allowed</b><span>Bonne adresse, mauvaise méthode.</span></div>
+    </div>
+    <p>La réponse contient aussi des données. Par exemple, après une commande : <code>{ "id": 101, … }</code>, le <b>numéro</b> de la commande créée.</p>`,
+  ()=>`<span class="kick">Leçon 7 sur 7 · La suite</span>
+    <h2>Ce qui vous attend</h2>
+    <p class="lead">Deux services : un déjeuner calme, puis un dîner du vendredi plein d'imprévus.</p>
+    <p>En jouant, vous allez <b>vivre</b> les avantages de POST (body riche, données hors de l'URL, création claire) et <b>subir</b> ses pièges (commandes en double, touche F5, cache, liens, chiffrement). La cheffe Rania vous aidera à chaque fois, et son carnet final résume tout.</p>
+    <p class="note"><b>Prochaine étape :</b> une visite de l'écran, puis une commande d'entraînement <b>sans chrono</b>. Vous écrirez vous-même chaque requête, avec de l'aide à chaque étape.</p>`
+];
+let lessonFromHelp = false;
+function startTutorial(){ lessonFromHelp = false; showLesson(0); }
+function backToGame(){ closeModal(); lessonFromHelp=false; if(G){ G.paused=false; renderHUD(); } }
+function showLesson(i){
+  const last = i===LESSONS.length-1;
+  if(lessonFromHelp){
+    openModal(`${LESSONS[i]()}
+      <div class="lesson-nav">
+        <span class="dots">${LESSONS.map((_,k)=>`<i class="${k===i?"on":""}"></i>`).join("")}</span>
+        ${i>0?`<button class="ghostbtn" type="button" id="lPrev">Précédent</button>`:""}
+        <button class="big" type="button" id="lNext">${last?"Retour au jeu":"Suivant"}</button>
+      </div>
+      <button class="linkbtn" type="button" id="lSkip">Retour au jeu</button>`);
+    $("#sheet").scrollTop = 0;
+    if(i>0) $("#lPrev").addEventListener("click", ()=>showLesson(i-1));
+    $("#lNext").addEventListener("click", ()=>{ if(last) backToGame(); else showLesson(i+1); });
+    $("#lSkip").addEventListener("click", backToGame);
+    return;
+  }
+  openModal(`${LESSONS[i]()}
+    <div class="lesson-nav">
+      <span class="dots">${LESSONS.map((_,k)=>`<i class="${k===i?"on":""}"></i>`).join("")}</span>
+      ${i>0?`<button class="ghostbtn" type="button" id="lPrev">Précédent</button>`:""}
+      <button class="big" type="button" id="lNext">${last?"Commencer la visite":"Suivant"}</button>
+    </div>
+    <button class="linkbtn" type="button" id="lSkip">Passer le tutoriel</button>`);
+  $("#sheet").scrollTop = 0;
+  if(i>0) $("#lPrev").addEventListener("click", ()=>showLesson(i-1));
+  $("#lNext").addEventListener("click", ()=>{ if(last){ closeModal(); startTraining(); } else showLesson(i+1); });
+  $("#lSkip").addEventListener("click", ()=>{ closeModal(); showHelp(true); });
+}
+
+/* ---------- Tutoriel : visite et entraînement guidé ---------- */
+let T = null;
+const TRAIN_CUST = {
+  sofia:{key:"sofia", name:"Sofia", table:1, kind:"order", items:[1], pay:"card", card:"1111 2222", tutorial:true, say:"Bonjour ! Une pizza margherita, s'il vous plaît. Je paierai par carte."},
+  malek:{key:"malek", name:"Malek", table:2, kind:"info", plat:1, tutorial:true, say:"Bonjour ! Combien coûte la pizza margherita ?"}
+};
+function spawnTraining(k){
+  if(G.customers.some(c=>c.key===k)) return;
+  const c = {...TRAIN_CUST[k]};
+  Object.assign(c, {uid:uid(), state:"seated", patience:100, mistakes:0, arrived:G.t, lookObj:LOOKS[c.key]});
+  G.customers.push(c); renderTables();
+}
+const cust = n => G.customers.find(c=>c.name===n);
+const past = (n, states) => { const c=cust(n); return !c || states.includes(c.state); };
+const tableEl = n => document.querySelectorAll("#tables .tbl")[n-1];
+const orderOf = t => (G.orders.find(o=>o.table===t && o.status!=="cancelled")||{}).id || 101;
+function setFields(f){
+  if(f.m!==undefined){ $("#m").value=f.m; $("#m").dispatchEvent(new Event("change")); }
+  if(f.scheme!==undefined) $("#scheme").value=f.scheme;
+  if(f.path!==undefined) $("#path").value=f.path;
+  if(f.hdrs!==undefined) $("#hdrs").value=f.hdrs;
+  if(f.body!==undefined) $("#body").value=f.body;
+}
+function bodyIs(exp){
+  try{ const b=JSON.parse($("#body").value); return Object.entries(exp).every(([k,v])=> Array.isArray(v) ? Array.isArray(b[k]) && sameItems(b[k].map(Number), v) : num(b[k])===v); }catch(e){ return false; }
+}
+const TSTEPS = [
+  {type:"tour", target:".hud-in", text:`<b>La barre du haut.</b> Le service en cours et l'heure, votre <b>caisse</b> (en dinars) et votre <b>note</b> moyenne sur 5. Les alertes (Wi-Fi saturé, espion…) s'affichent ici en rouge.`},
+  {type:"tour", target:"#bookBtn", text:`Le <b>Livre de recettes</b> contient toutes les requêtes possibles, avec des exemples. Sur ordinateur, il reste ouvert à gauche pendant que vous écrivez.`},
+  {type:"tour", target:"#helpBtn", text:`<b>Aide</b> ouvre un aide-mémoire de toutes les actions. <b>Pause</b> arrête le temps quand vous voulez.`},
+  {type:"tour", target:".ardoise", text:`L'<b>ardoise</b> affiche la carte. Dans une requête, un plat se désigne par son <b>numéro</b> : 1 = pizza, 2 = burger, etc.`},
+  {type:"tour", target:".floor", text:`La <b>salle</b> et ses 6 tables. Les clients s'assoient, une <b>bulle</b> montre ce qu'ils veulent, et la <b>barre de patience</b> sous eux passe du vert au rouge s'ils attendent trop.`},
+  {type:"tour", target:"#dialogue", text:`Ici s'affiche ce que dit le client sur lequel vous avez cliqué.`},
+  {type:"tour", target:"#rail", text:`Le <b>rail des tickets</b> : chaque demande prise en salle y est accrochée. Cliquez sur un ticket pour revoir la demande.`},
+  {type:"tour", target:"#borne", text:`La <b>borne de la cuisine</b> : c'est ici que vous écrivez les requêtes. Une case pour la méthode, le protocole, le chemin, les en-têtes et le body. Puis <b>Envoyer</b>.`},
+  {type:"tour", target:"#resp", text:`La <b>réponse</b> de la cuisine : le code (201, 400…), les données, et une explication en français si quelque chose ne va pas.`},
+  {type:"tour", target:".duo", text:`Les <b>fourneaux</b> montrent ce qui cuit. Le <b>registre</b> note chaque requête reçue par le serveur.`},
+  {type:"tour", target:".passe", text:`Le <b>passe</b> : les assiettes et les réponses à apporter y arrivent. La case <b>Mains</b> montre ce que vous portez, et <b>Jeter</b> sert à jeter une assiette.`},
+  {type:"do", enter:()=>spawnTraining("sofia"), target:()=>tableEl(1), text:`À vous de jouer ! Sofia s'assoit à la table 1 et lève la main. <b>Cliquez sur elle</b> pour prendre sa commande.<br><small>Pas de chrono pendant l'entraînement.</small>`, until:()=>G.tickets.length>0},
+  {type:"tour", target:"#rail", text:`Son ticket est arrivé : <b>1 × Pizza margherita, table 1</b>. Sur l'ardoise, la pizza margherita porte le <b>numéro 1</b>.`},
+  {type:"do", target:"#bookBtn", text:`Ouvrez le <b>Livre de recettes</b>, puis cliquez sur l'onglet <b>« Prendre une commande »</b>.`, until:()=>!$("#book").hidden && G.bookPage==="commande"},
+  {type:"tour", target:"#book", text:`Voici la recette : une commande, c'est <b>POST</b> sur le chemin <b>/commandes</b>, avec dans le body le numéro de table et la liste des plats. Gardez le livre ouvert, on l'applique.`},
+  {type:"tour", target:"#m", text:`Dans la borne, la méthode est déjà sur <b>POST</b> : c'est la bonne, puisqu'on <b>crée</b> une commande.`},
+  {type:"do", target:"#scheme", text:`Choisissez <b>https://</b> dans la liste : la connexion sera chiffrée.`, until:()=>$("#scheme").value==="https://", fill:{scheme:"https://"}},
+  {type:"do", target:"#path", text:`Dans la case du chemin, tapez : <code>/commandes</code>`, until:()=>parsePath($("#path").value).path==="/commandes" && !parsePath($("#path").value).query, fill:{path:"/commandes"}},
+  {type:"do", target:"#body", text:`Dans la case <b>Body</b>, tapez exactement :<pre>{ "table": 1, "plats": [1] }</pre><small>Accolades autour, guillemets droits autour des noms, la liste des plats entre crochets.</small>`, until:()=>bodyIs({table:1, plats:[1]}), fill:{body:'{ "table": 1, "plats": [1] }'}},
+  {type:"do", target:".send", text:`Tout est prêt. Cliquez sur <b>Envoyer</b> (ou Ctrl + Entrée).`, until:()=>G.orders.some(o=>o.table===1)},
+  {type:"tour", target:"#resp", text:()=>`<b>201 Created</b> : la cuisine a créé la commande <b>n°${orderOf(1)}</b>. Ce numéro est dans la réponse (champ « id ») et sur le ticket. Il servira pour encaisser.`},
+  {type:"do", target:".duo", text:`La pizza cuit aux <b>fourneaux</b>. Le <b>registre</b> a noté votre requête, mais pas le contenu du body. Patientez quelques secondes…`, until:()=>G.pass.some(p=>p.type==="plate")},
+  {type:"do", target:"#pass", text:`L'assiette est sur le <b>passe</b>. <b>Cliquez dessus</b> pour la prendre.`, until:()=>(G.hand && G.hand.type==="plate") || past("Sofia",["eating","waitPay","leaving"])},
+  {type:"do", target:()=>tableEl(1), text:`Vous tenez l'assiette (case « Mains »), et les clients brillent. <b>Cliquez sur Sofia</b> pour la servir.<br><small>Pour reposer un objet : cliquez sur « Mains ». En cas d'erreur de client, il vous le dit.</small>`, until:()=>past("Sofia",["eating","waitPay","leaving"])},
+  {type:"do", target:()=>tableEl(1), text:`Sofia mange. Dans quelques secondes, elle va demander <b>l'addition</b>…`, until:()=>past("Sofia",["waitPay","leaving"])},
+  {type:"tour", target:"#rail", text:()=>`Nouveau ticket : <b>paiement</b>. Il indique la commande <b>n°${orderOf(1)}</b> et la carte de Sofia : <b>1111 2222</b>.`},
+  {type:"do", target:"#bookBtn", text:`Dans le livre, ouvrez la page <b>« Encaisser par carte »</b>.`, until:()=>!$("#book").hidden && G.bookPage==="paiement"},
+  {type:"do", target:"#borne", text:()=>`Écrivez le paiement dans la borne :<ul><li>méthode <b>POST</b> et <b>https://</b></li><li>chemin <code>/paiements</code></li><li>body :</li></ul><pre>{ "commande": ${orderOf(1)}, "carte": "1111 2222" }</pre>Puis <b>Envoyer</b>.<br><small>La carte est un texte : elle va entre guillemets.</small>`,
+    until:()=>G.pass.some(p=>p.type==="receipt") || (G.hand && G.hand.type==="receipt") || past("Sofia",["leaving"]), fill:()=>({m:"POST", scheme:"https://", path:"/paiements", hdrs:"", body:`{ "commande": ${orderOf(1)}, "carte": "1111 2222" }`})},
+  {type:"do", target:"#pass", text:`Paiement accepté (201). Le <b>reçu</b> est sur le passe : prenez-le, puis donnez-le à Sofia.`, until:()=>{const c=cust("Sofia"); return !c || c.state==="leaving";}},
+  {type:"tour", target:".hud-in", text:`Sofia repart contente. Votre <b>caisse</b> a augmenté (le prix + un pourboire) et votre <b>note</b> s'affiche. Plus vous servez vite, plus le pourboire est gros.`},
+  {type:"do", enter:()=>spawnTraining("malek"), target:()=>tableEl(2), text:`Malek s'assoit à la table 2. <b>Cliquez sur lui</b> pour savoir ce qu'il veut.`, until:()=>{const c=cust("Malek"); return c && c.state==="waitInfo";}},
+  {type:"do", target:"#borne", text:`Malek veut seulement <b>connaître un prix</b>. On ne crée rien, on <b>lit</b> : c'est <b>GET</b>.<ul><li>méthode <b>GET</b> (la case Body se grise : un GET n'a pas de body)</li><li>chemin <code>/plats/1</code> (la fiche du plat n°1)</li></ul>Puis <b>Envoyer</b>.<br><small>Recette : page « Donner un prix » du livre.</small>`,
+    until:()=>G.pass.some(p=>p.type==="note") || (G.hand && G.hand.type==="note") || past("Malek",["leaving"]), fill:{m:"GET", scheme:"https://", path:"/plats/1", hdrs:"", body:""}},
+  {type:"do", target:"#pass", text:`La fiche de prix est sur le passe. Prenez-la et donnez-la à Malek.`, until:()=>{const c=cust("Malek"); return !c || c.state==="leaving";}},
+  {type:"do", target:".send", text:`Dernière expérience : cliquez encore sur <b>Envoyer</b>, avec la même requête GET.`, until:()=>G.stats.cacheHits>0},
+  {type:"tour", target:"#resp", text:`Réponse <b>instantanée</b>, « depuis le cache » : la réponse à un GET peut être gardée en mémoire et resservie. Un POST, lui, repasse toujours par la cuisine. C'est l'une des limites de POST que vous découvrirez en jouant.`}
+];
+function startTraining(){
+  const tips = G.tipsShown;
+  G = freshGame(); G.tipsShown = tips; G.training = true;
+  resetBoard();
+  startService("train");
+  T = {i:0}; coachGo(0);
+}
+function targetEl(s){ return typeof s.target==="function" ? s.target() : document.querySelector(s.target); }
+function coachGo(i){
+  if(i>=TSTEPS.length){ endTraining(true); return; }
+  T.i=i; T.enteredAt=Date.now(); T.advancing=false; T.met=false;
+  const s=TSTEPS[i];
+  if(s.enter) s.enter();
+  renderCoach();
+}
+function renderCoach(){
+  const s=TSTEPS[T.i], box=$("#coach");
+  const txt = typeof s.text==="function" ? s.text() : s.text;
+  const isDo = s.type==="do";
+  box.innerHTML = `<div class="c-top"><span class="c-step">${isDo?"À vous":"Visite"} · étape ${T.i+1} sur ${TSTEPS.length}</span><button class="c-skip" type="button" id="cSkip">Passer le tutoriel</button></div>
+    <div class="c-body">${txt}</div>
+    <div class="c-status" id="cStatus"></div>
+    <div class="c-btns">${isDo?`<span class="c-wait">En attente de votre action…</span>`:""}${s.fill?`<button class="c-fill" type="button" id="cFill">Remplir à ma place</button>`:""}${isDo?"":`<button class="c-next" type="button" id="cNext">Suivant</button>`}</div>`;
+  box.hidden=false; $("#coachHole").hidden=false;
+  $("#cSkip").addEventListener("click", ()=>endTraining(false));
+  if(!isDo) $("#cNext").addEventListener("click", ()=>coachGo(T.i+1));
+  if(s.fill) $("#cFill").addEventListener("click", ()=>{ setFields(typeof s.fill==="function"?s.fill():s.fill); $("#cStatus").innerHTML = s.target===".send"||s.target==="#borne" ? "Les cases sont remplies. Relisez-les, puis cliquez sur <b>Envoyer</b>." : ""; });
+  const el = targetEl(s);
+  if(el) el.scrollIntoView({block:"center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
+  placeCoach();
+}
+function placeCoach(){
+  if(!T) return;
+  const el = targetEl(TSTEPS[T.i]), hole=$("#coachHole");
+  if(!el || !el.getClientRects().length){ hole.hidden=true; return; }
+  const r = el.getBoundingClientRect(), pad=6;
+  Object.assign(hole.style, {top:(r.top-pad)+"px", left:(r.left-pad)+"px", width:(r.width+pad*2)+"px", height:(r.height+pad*2)+"px"});
+  hole.hidden=false;
+  $("#coach").classList.toggle("at-top", r.top + r.height/2 > innerHeight*0.55);
+}
+function hideCoach(){ $("#coach").hidden=true; $("#coachHole").hidden=true; }
+function endTraining(completed){
+  hideCoach(); T=null;
+  if(G) G.trainedDone = completed;
+  showHelp(true);
+}
+setInterval(()=>{
+  if(!T || modalOpen) return;
+  placeCoach();
+  const s=TSTEPS[T.i];
+  if(s.type!=="do" || T.advancing) return;
+  const st=$("#cStatus");
+  if(!T.met && s.until()) T.met = true;
+  if(T.met){
+    if(Date.now()-T.enteredAt < 1200) return;
+    T.advancing=true; st.innerHTML=`<b class="ok">Bien joué !</b>`;
+    setTimeout(()=>{ if(T) coachGo(T.i+1); }, 900);
+    return;
+  }
+  if(G.lastStatus>=400 && G.lastStatusAt>T.enteredAt) st.innerHTML = `La cuisine a répondu <b>${G.lastStatus}</b> : lisez l'explication sous la réponse, corrigez, puis renvoyez.`;
+}, 200);
+addEventListener("scroll", placeCoach, {passive:true});
+addEventListener("resize", placeCoach);
+
+/* ---------- Aide-mémoire ---------- */
+function helpHTML(){
+  return `<div class="cheat">
+    <section><h3>Dans la salle</h3><ul>
+      <li>Client qui <b>lève la main</b> : cliquez dessus pour prendre sa commande.</li>
+      <li>Client cliqué <b>mains vides</b> : vous revoyez ce qu'il a demandé.</li>
+      <li>Client cliqué <b>avec un objet en main</b> : vous le lui donnez.</li>
+      <li>La <b>barre</b> sous le client, c'est sa patience. À zéro, il part fâché.</li></ul></section>
+    <section><h3>En cuisine</h3><ul>
+      <li>Cliquez un <b>ticket</b> pour revoir la demande.</li>
+      <li>Écrivez la requête dans la <b>borne</b>, puis <b>Envoyer</b> (ou Ctrl + Entrée). <b>Effacer</b> vide les cases.</li>
+      <li>Lisez la <b>réponse</b> : code + explication en cas d'erreur.</li>
+      <li><b>Fourneaux</b> : ce qui cuit. <b>Registre</b> : ce que le serveur a noté.</li></ul></section>
+    <section><h3>Au passe</h3><ul>
+      <li>Cliquez un objet pour le <b>prendre</b> (assiette, fiche, lien, reçu).</li>
+      <li>Cliquez sur <b>Mains</b> pour le reposer.</li>
+      <li><b>Jeter</b> : une assiette jetée coûte la moitié de son prix en ingrédients.</li></ul></section>
+    <section><h3>Les recettes</h3><div class="tablewrap"><table>
+      <tr><td>Commander</td><td><code>POST /commandes</code></td></tr>
+      <tr><td>Encaisser par carte</td><td><code>POST /paiements</code></td></tr>
+      <tr><td>Donner un prix</td><td><code>GET /plats/4</code></td></tr>
+      <tr><td>Lien à partager</td><td><code>GET /plats?vegetarien=true</code></td></tr>
+      <tr><td>Annuler une commande</td><td><code>DELETE /commandes/101</code></td></tr>
+      <tr><td>Revoir une commande</td><td><code>GET /commandes/101</code></td></tr>
+      <tr><td>Lire toute la carte</td><td><code>GET /menu</code></td></tr></table></div></section>
+    <section class="ev"><h3>Les imprévus du dîner</h3><ul>
+      <li><b>Wi-Fi saturé</b> : la réponse se perd. Renvoyer ou attendre ? Avec un en-tête <code>Idempotency-Key</code>, on peut renvoyer sans risque.</li>
+      <li><b>Touche F5</b> : une commande arrive en double. Annulez-la avec DELETE avant qu'elle cuise.</li>
+      <li><b>Espion</b> : tout ce qui passe en http:// est lisible. Payez en https://.</li>
+      <li><b>Banquet</b> : six plats dans un seul body.</li>
+      <li><b>Lien</b> : seul un GET donne un lien partageable.</li></ul></section>
+    <section class="win"><h3>Bien jouer</h3><ul>
+      <li>Servir vite = plus de <b>pourboires</b> et d'<b>étoiles</b>.</li>
+      <li>Se tromper de client lui fait perdre patience.</li>
+      <li>Les <b>incidents</b> (carte qui fuit, carte volée, débit en double, assiette gaspillée) baissent la note.</li>
+      <li>La cheffe Rania explique chaque imprévu. Le <b>carnet final</b> résume ce que vous avez appris sur POST.</li></ul></section>
+  </div>`;
+}
+function showHelp(final){
+  openModal(`<h2>${final?"Vous êtes prêt·e ! Voici l'aide-mémoire":"Aide-mémoire"}</h2>
+    ${final?`<p class="lead">Tout ce que vous pouvez faire dans le jeu. Il reste disponible à tout moment avec le bouton <b>Aide</b> en haut.</p>`:""}
+    ${helpHTML()}
+    <div class="start-btns"><button class="big" type="button" id="helpGo">${final?"Commencer le déjeuner":"Reprendre le jeu"}</button>${final?"":`<button class="ghostbtn" type="button" id="helpTuto">Revoir les leçons</button>`}</div>`);
+  $("#sheet").scrollTop = 0;
+  $("#helpGo").addEventListener("click", ()=>{ closeModal(); if(final) startLunch(); });
+  if(!final) $("#helpTuto").addEventListener("click", ()=>{ G.paused=true; renderHUD(); lessonFromHelp=true; showLesson(0); });
+}
+function startLunch(){
+  const tips = G.tipsShown, trained = G.trainedDone;
+  G = freshGame(); G.tipsShown = tips;
+  if(trained) ["welcome","firstTicket","firstCreated","firstPay","firstInfo","firstError","cacheHit"].forEach(k=>tips.add(k));
+  resetBoard();
+  startService(0);
+  if(!trained) openBook("carte");
+}
+$("#helpBtn").addEventListener("click", ()=>{ if(modalOpen || !G || !G.svc) return; showHelp(false); });
+
+G = freshGame();
+resetBoard();
+showStart();
+</script>
+
+</body>
+</html>
